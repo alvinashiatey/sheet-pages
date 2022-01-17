@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import chalk from 'chalk';
+const DIR = `${process.cwd()}/dist/`;
 
 const styles = `body {font-family: 'Helvetica', sans-serif;font-size: 62.5%;line-height: 1.42857143;color: #333;background-color: #fff;font-size: 2rem;}.container {width: 90%;margin: 0 auto;}*:where(:not(iframe, canvas, img, svg, video):not(svg *, symbol *)) {all: unset;display: revert;}*, *::before, *::after {box-sizing: border-box;}a {cursor: revert;}ol, ul, menu {list-style: none;}img {max-width: 100%;}table {border-collapse: collapse;}textarea {white-space: revert;}:where([hidden]) {display: none;}:where([contenteditable]) {-moz-user-modify: read-write;-webkit-user-modify: read-write;overflow-wrap: break-word;-webkit-line-break: after-white-space;}:where([draggable='true']) {-webkit-user-drag: element;}`;
 
@@ -20,13 +21,13 @@ const collapseArray = arr => {
 	return result;
 };
 
-const zip = (...arrs) => {
+const zip = (...arrays) => {
 	let zipped = [];
-	for (let i = 0; i < arrs[0].length; i++) {
+	for (let i = 0; i < arrays[0].length; i++) {
 		if (!Array.isArray(zipped[i])) {
 			zipped[i] = [];
 		}
-		for (const arr of arrs) {
+		for (const arr of arrays) {
 			zipped[i].push(arr[i]);
 		}
 	}
@@ -135,62 +136,82 @@ const headConstructor = arg => {
 };
 
 const bodyConstructor = dataObject => {
-	let body = '';
-	let keys = Object.keys(dataObject);
-	let filterKeys = keys.filter(
-		key =>
-			key.toLowerCase().includes('ul-') ||
-			key.toLowerCase().includes('ol-') ||
-			key.toLowerCase().includes('head-') ||
-			key.toLowerCase().includes('meta-')
-	);
+	if (typeof dataObject === 'object' && dataObject !== null) {
+		let body = '';
+		let keys = Object.keys(dataObject);
+		let filterKeys = keys.filter(
+			key =>
+				key.toLowerCase().includes('ul-') ||
+				key.toLowerCase().includes('ol-') ||
+				key.toLowerCase().includes('head-') ||
+				key.toLowerCase().includes('meta-')
+		);
 
-	let newKeys = keys.filter(key => !filterKeys.includes(key.toLowerCase()));
-	let otherElements = newKeys.map(key => {
-		if (key.toLowerCase().includes('image')) {
-			return dataObject[key].map(img => `<img src="${img}" alt="">`);
-		} else if (key.toLowerCase().includes('link')) {
-			return dataObject[key].map(
-				link => `<a href="${link}" target="_blank">${link}</a>`
-			);
-		} else {
-			return dataObject[key];
-		}
-	});
-	let otherElementsWorkingArray = zip(...otherElements);
-	let block = '';
-	otherElementsWorkingArray.forEach(element => {
-		let div = '';
-		div += divConstructor(element);
-		block += `<div class="el">${div}</div>`;
-	});
-	body += `<div class="block__container"><div class="block">${block}</div></div>`;
-	body += ulConstructor(dataObject);
-	return body;
+		let newKeys = keys.filter(
+			key =>
+				!filterKeys
+					.map(name => name.toLowerCase())
+					.includes(key.toLowerCase())
+		);
+		let otherElements = newKeys.map(key => {
+			if (key.toLowerCase().includes('image')) {
+				return dataObject[key].map(img => `<img src="${img}" alt="">`);
+			} else if (key.toLowerCase().includes('link')) {
+				return dataObject[key].map(
+					link => `<a href="${link}" target="_blank">${link}</a>`
+				);
+			} else {
+				return dataObject[key];
+			}
+		});
+
+		let otherElementsWorkingArray = Array.isArray(otherElements[0])
+			? zip(...otherElements)
+			: otherElements;
+		let block = '';
+		otherElementsWorkingArray.forEach(element => {
+			let div = '';
+			div += divConstructor(element);
+			block += `<div class="el">${div}</div>`;
+		});
+		body += `<div class="block__container"><div class="block">${block}</div></div>`;
+		body += ulConstructor(dataObject) || '';
+		return body;
+	}
 };
 
-const buildHtml = object => {
+const buildHtml = data => {
 	let body = '';
 	let head = '';
-	let title = object.title || object.Title || object[0].Title || '';
-	let collapsedArray = collapseArray(object);
-
-	if (!Array.isArray(object)) {
-		for (var key in object) {
-			if (key.toLowerCase() !== 'title') {
-				var div = `<div><p>${object[key]}</p></div>`;
-				body += div;
-			} else if (key.toLowerCase() === 'image') {
-				var img = `<img src="${object[key]}">`;
-				body += img;
-			}
+	if (!Array.isArray(data)) {
+		if (typeof data === 'object' && data !== null) {
+			head = headConstructor(data);
+			body = bodyConstructor(data);
+		} else {
+			body = data;
 		}
 	} else {
+		let collapsedArray = collapseArray(data);
 		body = bodyConstructor(collapsedArray);
 		head = headConstructor(collapsedArray);
 	}
-
 	return `<!DOCTYPE html> <html> <head> <meta http-equiv="X-UA-Compatible" content="IE=edge"> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> ${head} <style type="text/css">${styles}</style></head><body><div class="container">${body}</div></body></html>`;
+};
+
+const buildLinkedIndexPage = links => {
+	let indexPage = '';
+	indexPage += `<div class="index__container">`;
+	for (let link of links) {
+		indexPage += `<div class="link"><a href="${link.url}">${link.name}</a></div>`;
+	}
+	indexPage += `</div>`;
+	let html = buildHtml(indexPage);
+	const filePath = path.join(DIR);
+	const fileName = path.join(filePath, `index.html`);
+	fs.writeFile(fileName, html, function (err) {
+		if (err) throw err;
+	});
+	return indexPage;
 };
 
 async function generateSingleHtml(data, directory) {
@@ -207,15 +228,12 @@ async function generateSingleHtml(data, directory) {
 }
 
 async function generateMultipleHtml(data, directory) {
+	let links = [];
 	for (let [index, doc] of data.entries()) {
 		const html = buildHtml(doc);
-		let filePath;
-		if (index === 0) {
-			filePath = path.join(directory);
-		} else {
-			let p = doc[Object.keys(doc)[0]];
-			filePath = path.join(directory, `${p}/`);
-		}
+		let p = doc[Object.keys(doc)[0]].split(' ').join('-');
+		let filePath = path.join(directory, `${p}/`);
+		links.push({ url: `/${p}/`, name: p });
 		if (!fs.existsSync(filePath)) {
 			fs.mkdirSync(filePath, { recursive: true });
 		}
@@ -225,13 +243,10 @@ async function generateMultipleHtml(data, directory) {
 			console.log('HTML file generated. Path:' + chalk.yellow(fileName));
 		});
 	}
+	buildLinkedIndexPage(links);
 }
 
-export default async function (
-	data,
-	rows = false,
-	directory = `${process.cwd()}/dist/`
-) {
+export default async function (data, rows = false, directory = DIR) {
 	if (data.length <= 1 && data.length !== 0 && !rows) {
 		return generateSingleHtml(data[0], directory);
 	} else if (data.length > 1 && !rows) {
