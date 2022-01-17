@@ -1,0 +1,47 @@
+{
+	"name": "@alvinashiatey/sheet-pages",
+	"description": "A simple cli to generate html pages from a shared google spreadsheet. Dont forget to add the sheetId with the -i flag",
+	"version": "1.0.0",
+	"license": "MIT",
+	"main": "src/index.js",
+	"bin": {
+		"@alvinashiatey/sheet-pages": "bin/sheet-pages.js",
+		"sheet-pages": "bin/sheet-pages.js",
+		"sheetpages": "bin/sheet-pages.js"
+	},
+	"publishConfig": {
+		"access": "public"
+	},
+	"author": {
+		"name": "Alvin Ashiatey",
+		"email": "alvinashiatey@gmail.com",
+		"url": "https://www.alvinashiatey.com"
+	},
+	"keywords": [
+		"sheet-pages",
+		"Alvin Ashiatey"
+	],
+	"files": [
+		"bin/",
+		"src/",
+		"utils/"
+	],
+	"type": "module",
+	"scripts": {
+		"format": "prettier --write \"./**/*.{js,json}\""
+	},
+	"dependencies": {
+		"axios": "^0.24.0",
+		"chalk": "^5.0.0",
+		"cli-alerts": "^1.2.2",
+		"cli-handle-error": "^4.4.0",
+		"cli-handle-unhandled": "^1.1.1",
+		"cli-meow-help": "^2.0.2",
+		"cli-welcome": "^2.2.2",
+		"meow": "^9.0.0",
+		"ora": "^5.4.1"
+	},
+	"devDependencies": {
+		"prettier": "^2.5.1"
+	}
+}
