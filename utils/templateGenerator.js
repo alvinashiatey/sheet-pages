@@ -131,18 +131,25 @@ const headerConstructor = arg => {
 				let headerWorkingArray = Array.isArray(headerArray[0])
 					? zip(...headerArray)
 					: headerArray;
-				for (let headerELement of headerWorkingArray) {
-					if (headerKey.toLowerCase().includes('title')) {
-						div += divConstructor(
-							`<a href='/'><h1>${headerELement}</h1></a>`,
-							headerKey.split('-')[1]
-						);
-					} else {
-						div += divConstructor(
-							headerELement,
-							headerKey.split('-')[1]
-						);
+				if (Array.isArray(headerWorkingArray)) {
+					for (let headerELement of headerWorkingArray) {
+						if (headerKey.toLowerCase().includes('title')) {
+							div += divConstructor(
+								`<a href='/'><h1>${headerELement}</h1></a>`,
+								headerKey.split('-')[1]
+							);
+						} else {
+							div += divConstructor(
+								headerELement,
+								headerKey.split('-')[1]
+							);
+						}
 					}
+				} else {
+					div += divConstructor(
+						`<a href='/'><h1>${headerWorkingArray}</h1></a>`,
+						headerKey.split('-')[1]
+					);
 				}
 			}
 			let header = `<header>${div || ''}</header>`;
@@ -183,6 +190,28 @@ const headConstructor = arg => {
 	}
 };
 
+const imageConstructor = arg => {
+	if (Array.isArray(arg)) {
+		return arg.map(item => {
+			return `<img src="${item}" alt="">`;
+		});
+	} else if (arg !== undefined) {
+		return `<img src="${arg}" alt="">`;
+	}
+	return null;
+};
+
+const linkConstructor = arg => {
+	if (Array.isArray(arg)) {
+		return arg.map(item => {
+			return `<a href="${item}" target="_blank">${item}</a>`;
+		});
+	} else if (arg !== undefined) {
+		return `<a href="${arg}" target="_blank">${arg}</a>`;
+	}
+	return null;
+};
+
 const bodyConstructor = dataObject => {
 	if (typeof dataObject === 'object' && dataObject !== null) {
 		let body = '';
@@ -205,11 +234,9 @@ const bodyConstructor = dataObject => {
 		);
 		let otherElements = newKeys.map(key => {
 			if (key.toLowerCase().includes('image')) {
-				return dataObject[key].map(img => `<img src="${img}" alt="">`);
+				return imageConstructor(dataObject[key]);
 			} else if (key.toLowerCase().includes('link')) {
-				return dataObject[key].map(
-					link => `<a href="${link}" target="_blank">${link}</a>`
-				);
+				return linkConstructor(dataObject[key]);
 			} else {
 				return dataObject[key];
 			}
