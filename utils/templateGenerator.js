@@ -3,7 +3,7 @@ import path from 'path';
 import chalk from 'chalk';
 const DIR = `${process.cwd()}/dist/`;
 
-const styles = `body {font-family: 'Helvetica', sans-serif;font-size: 62.5%;line-height: 1.42857143;color: #333;background-color: #fff;font-size: 2rem;}.container {width: 90%;margin: 0 auto;}*:where(:not(iframe, canvas, img, svg, video):not(svg *, symbol *)) {all: unset;display: revert;}*, *::before, *::after {box-sizing: border-box;}a {cursor: revert;}ol, ul, menu {list-style: none;}img {max-width: 100%;}table {border-collapse: collapse;}textarea {white-space: revert;}:where([hidden]) {display: none;}:where([contenteditable]) {-moz-user-modify: read-write;-webkit-user-modify: read-write;overflow-wrap: break-word;-webkit-line-break: after-white-space;}:where([draggable='true']) {-webkit-user-drag: element;}`;
+const styles = `body {font-family: 'Helvetica', sans-serif;font-size: 62.5%;line-height: 1.42857143;color: #333;background-color: #fff;font-size: 1.5rem;}.container {width: 90%;margin: 0 auto;}*:where(:not(iframe, canvas, img, svg, video):not(svg *, symbol *)) {all: unset;display: revert;}*, *::before, *::after {box-sizing: border-box;}a {cursor: revert;}ol, ul, menu {list-style: none;}img {max-width: 100%;}table {border-collapse: collapse;}textarea {white-space: revert;}:where([hidden]) {display: none;}:where([contenteditable]) {-moz-user-modify: read-write;-webkit-user-modify: read-write;overflow-wrap: break-word;-webkit-line-break: after-white-space;}:where([draggable='true']) {-webkit-user-drag: element;}header {display: flex;justify-content: space-between;align-items: center;font-size: 3rem;}.row, .row__el {display: flex;border-top: 2px solid #333;margin-block: 1.5rem;gap: 3rem;}.row img, .row a {filter: blur(10px);transition: all 0.5s ease-in-out;}.row img:hover, .row a:hover {filter: blur(0);}.block__container {width: 100%;height: 100%;padding-block: 5rem;}`;
 
 const collapseArray = arr => {
 	const result = {};
@@ -36,9 +36,34 @@ const zip = (...arrays) => {
 	return zipped;
 };
 
-let divConstructor = el => {
+const dataFilter = arg => {
+	if (typeof arg === 'object' && arg !== null) {
+		let keys = Object.keys(arg);
+		let listKeys = keys.filter(
+			key =>
+				key.toLowerCase().includes('ul-') ||
+				key.toLowerCase().includes('ol-')
+		);
+		let headerKeys = keys.filter(key =>
+			key.toLowerCase().includes('header-')
+		);
+		let headKeys = keys.filter(
+			key =>
+				key.toLowerCase().includes('head-') ||
+				key.toLowerCase().includes('meta-')
+		);
+		return {
+			listKeys,
+			headerKeys,
+			headKeys
+		};
+	}
+};
+
+let divConstructor = (el, cls = '') => {
+	let clsName = cls !== '' ? ` class="${cls}"` : '';
 	if (Array.isArray(el)) {
-		return `<div>${el
+		return `<div ${clsName}>${el
 			.map(item => {
 				// check if item is not url
 				if (item === undefined) return null;
@@ -50,16 +75,13 @@ let divConstructor = el => {
 			})
 			.join('')}</div>`;
 	} else {
-		return `<div>${el}</div>`;
+		return `<div ${clsName}>${el}</div>`;
 	}
 };
 
 const ulConstructor = arg => {
 	if (typeof arg === 'object' && arg !== null) {
-		let keys = Object.keys(arg);
-		let listKeys = keys.filter(
-			key => key.includes('UL-') || key.includes('OL-')
-		);
+		let listKeys = dataFilter(arg).listKeys;
 		let li = '';
 		if (listKeys.length > 0) {
 			let listArray = [];
@@ -82,7 +104,7 @@ const ulConstructor = arg => {
 			let listWorkingArray = zip(...listArray);
 			for (let liELement of listWorkingArray) {
 				let div = '';
-				div += divConstructor(liELement);
+				div += divConstructor(liELement, 'row');
 				li += `<li>${div}</li>`;
 			}
 			return `<ul>${li}</ul>`;
@@ -90,48 +112,74 @@ const ulConstructor = arg => {
 	} else if (Array.isArray(arg)) {
 		return `<ul>${arg
 			.map(item => {
-				return `<li>${divConstructor(item)}</li>`;
+				return `<li>${divConstructor(item, 'row')}</li>`;
 			})
 			.join('')}</ul>`;
 	} else if (arg !== undefined) {
-		return `<ul><li>${arg}</li></ul>`;
+		return `<ul><li class="row">${arg}</li></ul>`;
+	}
+	return null;
+};
+
+const headerConstructor = arg => {
+	if (typeof arg === 'object' && arg !== null) {
+		let headerKeys = dataFilter(arg).headerKeys;
+		if (headerKeys.length > 0) {
+			let div = '';
+			for (let headerKey of headerKeys) {
+				let headerArray = arg[headerKey];
+				let headerWorkingArray = Array.isArray(headerArray[0])
+					? zip(...headerArray)
+					: headerArray;
+				for (let headerELement of headerWorkingArray) {
+					if (headerKey.toLowerCase().includes('title')) {
+						div += divConstructor(
+							`<a href='/'><h1>${headerELement}</h1></a>`,
+							headerKey.split('-')[1]
+						);
+					} else {
+						div += divConstructor(
+							headerELement,
+							headerKey.split('-')[1]
+						);
+					}
+				}
+			}
+			let header = `<header>${div || ''}</header>`;
+			return header;
+		}
+	} else if (arg !== undefined) {
+		return `<header><div>${arg || ''}</div></header>`;
 	}
 	return null;
 };
 
 const headConstructor = arg => {
 	if (typeof arg === 'object' && arg !== null) {
-		let keys = Object.keys(arg);
-		let headKeys = keys.filter(
-			key =>
-				key.toLowerCase().includes('head-') ||
-				key.toLowerCase().includes('meta-')
-		);
+		let headKeys = dataFilter(arg).headKeys;
 		// check if headKeys includes "title" or "description"
-		let title = '';
-		let description = '';
-		let keywords = '';
-		let meta = '';
-		let head = '';
+		let values = {};
 		if (headKeys.length > 0) {
 			for (let headKey of headKeys) {
 				if (headKey.toLowerCase().includes('title')) {
 					if (arg[headKey] === undefined) return '';
-					title = `<title>${arg[headKey]}</title>`;
+					values.title = arg[headKey];
 				} else if (headKey.toLowerCase().includes('description')) {
 					if (arg[headKey] === undefined) return '';
-					description = `<meta name="description" content="${arg[headKey]}">`;
+					values.description = `<meta name="description" content="${arg[headKey]}">`;
 				} else if (headKey.toLowerCase().includes('keywords')) {
 					if (arg[headKey] === undefined) return '';
-					keywords = `<meta name="keywords" content="${arg[headKey]}">`;
+					values.keywords = `<meta name="keywords" content="${arg[headKey]}">`;
 				} else {
 					if (arg[headKey] === undefined) return '';
-					meta = `<meta name="${headKey}" content="${arg[headKey]}">`;
+					values.meta = `<meta name="${headKey}" content="${arg[headKey]}">`;
 				}
 			}
-			head = `${title}${description}${keywords}${meta}`;
+			values.head = `<title>${values.title || ''}</title>${
+				values.description || ''
+			}${values.keywords || ''}${values.meta || ''}`;
 		}
-		return head;
+		return values;
 	}
 };
 
@@ -144,6 +192,8 @@ const bodyConstructor = dataObject => {
 				key.toLowerCase().includes('ul-') ||
 				key.toLowerCase().includes('ol-') ||
 				key.toLowerCase().includes('head-') ||
+				key.toLowerCase().includes('header-') ||
+				key.toLowerCase().includes('footer-') ||
 				key.toLowerCase().includes('meta-')
 		);
 
@@ -171,9 +221,10 @@ const bodyConstructor = dataObject => {
 		let block = '';
 		otherElementsWorkingArray.forEach(element => {
 			let div = '';
-			div += divConstructor(element);
+			div += divConstructor(element, 'row__el');
 			block += `<div class="el">${div}</div>`;
 		});
+
 		body += `<div class="block__container"><div class="block">${block}</div></div>`;
 		body += ulConstructor(dataObject) || '';
 		return body;
@@ -183,19 +234,22 @@ const bodyConstructor = dataObject => {
 const buildHtml = data => {
 	let body = '';
 	let head = '';
+	let header = '';
 	if (!Array.isArray(data)) {
 		if (typeof data === 'object' && data !== null) {
-			head = headConstructor(data);
-			body = bodyConstructor(data);
+			head = headConstructor(data).head || '';
+			header = headerConstructor(data) || '';
+			body = bodyConstructor(data) || '';
 		} else {
 			body = data;
 		}
 	} else {
 		let collapsedArray = collapseArray(data);
-		body = bodyConstructor(collapsedArray);
-		head = headConstructor(collapsedArray);
+		head = headConstructor(collapsedArray).head || '';
+		header = headerConstructor(collapsedArray) || '';
+		body = bodyConstructor(collapsedArray) || '';
 	}
-	return `<!DOCTYPE html> <html> <head> <meta http-equiv="X-UA-Compatible" content="IE=edge"> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> ${head} <style type="text/css">${styles}</style></head><body><div class="container">${body}</div></body></html>`;
+	return `<!DOCTYPE html> <html> <head> <meta http-equiv="X-UA-Compatible" content="IE=edge"> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> ${head} <style type="text/css">${styles}</style></head><body><div class="container">${header} ${body}</div></body></html>`;
 };
 
 const buildLinkedIndexPage = links => {
