@@ -1,7 +1,7 @@
 {
 	"name": "sheet-pages",
 	"description": "A simple cli to generate html pages from a shared google spreadsheet. Dont forget to add the sheetId with the -i flag",
-	"version": "0.0.1",
+	"version": "0.1.0",
 	"license": "MIT",
 	"main": "src/index.js",
 	"bin": {

@@ -2,8 +2,9 @@ import fs from 'fs';
 import path from 'path';
 import chalk from 'chalk';
 const DIR = `${process.cwd()}/dist/`;
+import style from './styles.js';
 
-const styles = `body {font-family: 'Helvetica', sans-serif;font-size: 62.5%;line-height: 1.42857143;color: #333;background-color: #fff;font-size: 1.5rem;}.container {width: 90%;margin: 0 auto;}*:where(:not(iframe, canvas, img, svg, video):not(svg *, symbol *)) {all: unset;display: revert;}*, *::before, *::after {box-sizing: border-box;}a {cursor: revert;}ol, ul, menu {list-style: none;}img {max-width: 100%;}table {border-collapse: collapse;}textarea {white-space: revert;}:where([hidden]) {display: none;}:where([contenteditable]) {-moz-user-modify: read-write;-webkit-user-modify: read-write;overflow-wrap: break-word;-webkit-line-break: after-white-space;}:where([draggable='true']) {-webkit-user-drag: element;}header {display: flex;justify-content: space-between;align-items: center;font-size: 3rem;}.row, .row__el {display: flex;border-top: 2px solid #333;margin-block: 1.5rem;gap: 3rem;}.row img, .row a {filter: blur(10px);transition: all 0.5s ease-in-out;}.row img:hover, .row a:hover {filter: blur(0);}.block__container {width: 100%;height: 100%;padding-block: 5rem;}`;
+const styles = style.css;
 
 const collapseArray = arr => {
 	const result = {};
@@ -87,16 +88,9 @@ const ulConstructor = arg => {
 			let listArray = [];
 			for (let liKey of listKeys) {
 				if (liKey.toLowerCase().includes('image')) {
-					listArray.push(
-						arg[liKey].map(img => `<img src="${img}" alt="">`)
-					);
+					listArray.push(imageConstructor(arg[liKey]));
 				} else if (liKey.toLowerCase().includes('link')) {
-					listArray.push(
-						arg[liKey].map(
-							link =>
-								`<a href="${link}" target="_blank">${link}</a>`
-						)
-					);
+					listArray.push(linkConstructor(arg[liKey]));
 				} else {
 					listArray.push(arg[liKey]);
 				}
@@ -191,12 +185,15 @@ const headConstructor = arg => {
 };
 
 const imageConstructor = arg => {
+	let tag = '';
 	if (Array.isArray(arg)) {
 		return arg.map(item => {
-			return `<img src="${item}" alt="">`;
+			tag = `<img src="${item}" alt="">`;
+			return divConstructor(tag, 'row__image');
 		});
 	} else if (arg !== undefined) {
-		return `<img src="${arg}" alt="">`;
+		tag = `<img src="${arg}" alt="">`;
+		return divConstructor(tag, 'row__image');
 	}
 	return null;
 };
