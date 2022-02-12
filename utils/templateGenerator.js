@@ -1,7 +1,9 @@
-import fs from 'fs';
 import path from 'path';
+import dirHandler from './dirHandler.js';
+import mediaHandler from './mediaHandler.js';
 import chalk from 'chalk';
-const DIR = `${process.cwd()}/dist/`;
+const OUTPUT = 'dist';
+const DIR = `${process.cwd()}/${OUTPUT}/`;
 import style from './styles.js';
 
 const styles = style.css;
@@ -186,13 +188,16 @@ const headConstructor = arg => {
 
 const imageConstructor = arg => {
 	let tag = '';
+	let p = `${OUTPUT}/images/`;
 	if (Array.isArray(arg)) {
 		return arg.map(item => {
-			tag = `<img src="${item}" alt="">`;
+			mediaHandler.download(item, p);
+			tag = `<img src="${mediaHandler.filePathRelative}" alt="">`;
 			return divConstructor(tag, 'row__image');
 		});
 	} else if (arg !== undefined) {
-		tag = `<img src="${arg}" alt="">`;
+		mediaHandler.download(arg, p);
+		tag = `<img src="${mediaHandler.filePathRelative}" alt="">`;
 		return divConstructor(tag, 'row__image');
 	}
 	return null;
@@ -287,21 +292,16 @@ const buildLinkedIndexPage = links => {
 	let html = buildHtml(indexPage);
 	const filePath = path.join(DIR);
 	const fileName = path.join(filePath, `index.html`);
-	fs.writeFile(fileName, html, function (err) {
-		if (err) throw err;
-	});
+	dirHandler.createDirectory(fileName, html);
 	return indexPage;
 };
 
 async function generateSingleHtml(data, css, directory) {
 	const html = buildHtml(data, css);
 	const filePath = path.join(directory);
-	if (!fs.existsSync(filePath)) {
-		fs.mkdirSync(filePath, { recursive: true });
-	}
+	await dirHandler.createDirectory(filePath);
 	const fileName = path.join(filePath, `index.html`);
-	fs.writeFile(fileName, html, function (err) {
-		if (err) throw err;
+	await dirHandler.createFile(fileName, html).then(() => {
 		console.log('HTML file generated!');
 	});
 }
@@ -313,12 +313,9 @@ async function generateMultipleHtml(data, css, directory) {
 		let p = doc[Object.keys(doc)[0]].split(' ').join('-');
 		let filePath = path.join(directory, `${p}/`);
 		links.push({ url: `/${p}/`, name: p });
-		if (!fs.existsSync(filePath)) {
-			fs.mkdirSync(filePath, { recursive: true });
-		}
+		await dirHandler.createDirectory(filePath);
 		const fileName = path.join(filePath, `index.html`);
-		fs.writeFile(fileName, html, function (err) {
-			if (err) throw err;
+		await dirHandler.createFile(fileName, html).then(() => {
 			console.log('HTML file generated. Path:' + chalk.yellow(fileName));
 		});
 	}
