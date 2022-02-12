@@ -255,7 +255,7 @@ const bodyConstructor = dataObject => {
 	}
 };
 
-const buildHtml = data => {
+const buildHtml = (data, css) => {
 	let body = '';
 	let head = '';
 	let header = '';
@@ -273,7 +273,8 @@ const buildHtml = data => {
 		header = headerConstructor(collapsedArray) || '';
 		body = bodyConstructor(collapsedArray) || '';
 	}
-	return `<!DOCTYPE html> <html> <head> <meta http-equiv="X-UA-Compatible" content="IE=edge"> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> ${head} <style type="text/css">${styles}</style></head><body><div class="container">${header} ${body}</div></body></html>`;
+	let cssInclude = css ? `<style type="text/css">${styles}</style>` : '';
+	return `<!DOCTYPE html> <html> <head> <meta http-equiv="X-UA-Compatible" content="IE=edge"> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> ${head} ${cssInclude} </head><body><div class="container">${header} ${body}</div></body></html>`;
 };
 
 const buildLinkedIndexPage = links => {
@@ -292,8 +293,8 @@ const buildLinkedIndexPage = links => {
 	return indexPage;
 };
 
-async function generateSingleHtml(data, directory) {
-	const html = buildHtml(data);
+async function generateSingleHtml(data, css, directory) {
+	const html = buildHtml(data, css);
 	const filePath = path.join(directory);
 	if (!fs.existsSync(filePath)) {
 		fs.mkdirSync(filePath, { recursive: true });
@@ -305,10 +306,10 @@ async function generateSingleHtml(data, directory) {
 	});
 }
 
-async function generateMultipleHtml(data, directory) {
+async function generateMultipleHtml(data, css, directory) {
 	let links = [];
 	for (let [index, doc] of data.entries()) {
-		const html = buildHtml(doc);
+		const html = buildHtml(doc, css);
 		let p = doc[Object.keys(doc)[0]].split(' ').join('-');
 		let filePath = path.join(directory, `${p}/`);
 		links.push({ url: `/${p}/`, name: p });
@@ -324,12 +325,17 @@ async function generateMultipleHtml(data, directory) {
 	buildLinkedIndexPage(links);
 }
 
-export default async function (data, rows = false, directory = DIR) {
+export default async function (
+	data,
+	css = false,
+	rows = false,
+	directory = DIR
+) {
 	if (data.length <= 1 && data.length !== 0 && !rows) {
-		return generateSingleHtml(data[0], directory);
+		return generateSingleHtml(data[0], css, directory);
 	} else if (data.length > 1 && !rows) {
-		return generateSingleHtml(data, directory);
+		return generateSingleHtml(data, css, directory);
 	} else if (data.length > 1 && rows) {
-		return generateMultipleHtml(data, directory);
+		return generateMultipleHtml(data, css, directory);
 	}
 }

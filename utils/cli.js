@@ -39,6 +39,12 @@ const flags = {
 		default: false,
 		alias: `r`,
 		desc: `The ID for the google sheet`
+	},
+	css: {
+		type: `boolean`,
+		default: false,
+		alias: `c`,
+		desc: `Style the document with default CSS`
 	}
 };
 

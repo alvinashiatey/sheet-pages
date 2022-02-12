@@ -6,4 +6,3 @@ A simple cli to generate html pages from a shared google spreadsheet.
 npm install sheet-pages
 
 Recommend : npx sheet-pages -i [spreadsheetId]
-

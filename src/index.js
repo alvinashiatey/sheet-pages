@@ -20,9 +20,14 @@ export async function sheet_cli() {
 	!flags.sheetId && cli.showHelp(0);
 	!flags.sheetName &&
 		flags.sheetId &&
-		(await sheet.withID(flags.sheetId, flags.rows));
+		(await sheet.withID(flags.sheetId, flags.rows, flags.css));
 	flags.sheetName &&
 		flags.sheetId &&
-		(await sheet.withName(flags.sheetId, flags.sheetName, flags.rows));
+		(await sheet.withName(
+			flags.sheetId,
+			flags.sheetName,
+			flags.rows,
+			flags.css
+		));
 	debug && log(flags);
 }

@@ -5,13 +5,13 @@ import templateGenerator from './templateGenerator.js';
 const spinner = ora({ text: '' });
 
 export default {
-	withID: async function (sheetId, rows = false) {
+	withID: async function (sheetId, rows = false, css = false) {
 		try {
 			spinner.start(chalk.dim(`Fetching data for SheetId: ${sheetId}`));
 			const url = `https://sheets.alvinashiatey.com/sheetapi/${sheetId}`;
 			const response = await axios.get(url);
 			const { data } = response;
-			await templateGenerator(data.data, rows).then(() => {
+			await templateGenerator(data.data, css, rows).then(() => {
 				spinner.succeed(
 					chalk.green(`Files Generated from SheetId: ${sheetId}`)
 				);
@@ -21,7 +21,7 @@ export default {
 			process.exit(1);
 		}
 	},
-	withName: async function (sheetId, sheetName, rows = false) {
+	withName: async function (sheetId, sheetName, rows = false, css = false) {
 		const fetchData = async (id, name) => {
 			const url = `https://sheets.alvinashiatey.com/sheetapi/${id}/${name}`;
 			const response = axios.get(url);
@@ -35,7 +35,7 @@ export default {
 				);
 				const response = await fetchData(sheetId, sheetName);
 				const { data } = response;
-				await templateGenerator(data.data, rows).then(() => {
+				await templateGenerator(data.data, css, rows).then(() => {
 					spinner.succeed(
 						chalk.green(
 							`Files Generated from SheetName: ${sheetName}`
