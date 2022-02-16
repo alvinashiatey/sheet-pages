@@ -4,6 +4,7 @@ import path from 'path';
 
 class MediaHandler {
 	static filePathRelative = null;
+	static counter = 0;
 	static #validateURL(url) {
 		if (url.toLowerCase().includes('http')) {
 			return url;
@@ -20,7 +21,7 @@ class MediaHandler {
 
 		const extRegex = bName.match(/\.(jpg|png|jpeg|gif|webp)/);
 		const ext = extRegex ? extRegex[0] : '';
-		const fileName = `img-${Date.now()}${ext}`;
+		const fileName = `img-${MediaHandler.counter++}-aa${ext}`;
 		const filePath = path.join(dest, fileName);
 		MediaHandler.filePathRelative = path.relative(
 			path.join(dest, '..'),

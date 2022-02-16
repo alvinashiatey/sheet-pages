@@ -7,7 +7,6 @@ const DIR = `${process.cwd()}/${OUTPUT}/`;
 import style from './styles.js';
 
 
-
 const collapseArray = arr => {
 	const result = {};
 	const keys = Object.keys(arr[0]);
@@ -63,20 +62,49 @@ const dataFilter = arg => {
 	}
 };
 
+const elementConstructor = (arg, keys = null) => {
+	let isLink = txt => txt.toLowerCase().includes('http');
+	let elements = [];
+	const elementCheck = (key) => {
+		let val = "";
+		let cls = getClassName(key);
+		if (key.toLowerCase().includes('ignore')) {
+			val = '';
+		} else if (key.toLowerCase().includes('link')) {
+			val = linkConstructor(arg[key]);
+		} else if (key.toLowerCase().includes('image')) {
+			val = imageConstructor(arg[key], cls);
+		} else {
+			if (isLink(key)) {
+				val = linkConstructor(arg[key], cls);
+			} else {
+				val = paragraphConstructor(arg[key], cls);
+			}
+		}
+		return val;
+	}
+	if (typeof arg === 'object' && arg !== null && keys !== null) {
+		if (!keys.length) return null;
+		for (let key of keys) {
+			elements.push(elementCheck(key));
+		}
+		return elements;
+	} else if (Array.isArray(arg)) {
+		return arg.map(item => divConstructor(item));
+	} else if (arg !== undefined) {
+		return paragraphConstructor(arg);
+	}
+	return null;
+}
+
 let divConstructor = (el, cls = '') => {
-	let clsName = cls !== '' ? ` class="${cls}"` : '';
+	let clsName = cls !== null ? ` class="${cls}"` : '';
 	if (Array.isArray(el)) {
 		return `<div ${clsName}>${el
 			.map(item => {
 				// check if item is not url
 				if (item === undefined) return null;
-				if (item.toLowerCase().includes('http')) {
-					return linkConstructor(item);
-				} else if (item.toLowerCase().includes('<img')) {
-					return item;
-				} else {
-					return `<p>${item}</p>`;
-				}
+				return item;
 			})
 			.join('')}</div>`;
 	} else {
@@ -87,25 +115,9 @@ let divConstructor = (el, cls = '') => {
 const ulConstructor = arg => {
 	if (typeof arg === 'object' && arg !== null) {
 		let listKeys = dataFilter(arg).listKeys;
-		let li = '';
 		if (listKeys.length > 0) {
-			let listArray = [];
-			for (let liKey of listKeys) {
-				if (liKey.toLowerCase().includes('image')) {
-					listArray.push(imageConstructor(arg[liKey]));
-				} else if (liKey.toLowerCase().includes('link')) {
-					listArray.push(linkConstructor(arg[liKey]));
-				} else {
-					listArray.push(arg[liKey]);
-				}
-			}
-			let listWorkingArray = zip(...listArray);
-			for (let liELement of listWorkingArray) {
-				let div = '';
-				div += divConstructor(liELement, 'row');
-				li += `<li>${div}</li>`;
-			}
-			return `<ul>${li}</ul>`;
+			let listWorkingArray = zip(...elementConstructor(arg, listKeys));
+			return `<ul>${listWorkingArray.map(list => `<li>${divConstructor(list, 'row')}</li>`).join('')}</ul>`;
 		}
 	} else if (Array.isArray(arg)) {
 		return `<ul>${arg
@@ -187,41 +199,52 @@ const headConstructor = arg => {
 	}
 };
 
-const imageConstructor = arg => {
+const imageConstructor = (arg, cls = null) => {
+	let clsString = cls !== null ? ` class="${cls}"` : '';
 	let tag = '';
 	let p = `${OUTPUT}/images/`;
 	if (Array.isArray(arg)) {
 		return arg.map(item => {
 			mediaHandler.download(item, p);
-			tag = `<img src="${mediaHandler.filePathRelative}" alt="">`;
+			tag = `<img  ${clsString} src="${mediaHandler.filePathRelative}" alt="">`;
 			return divConstructor(tag, 'row__image');
 		});
 	} else if (arg !== undefined) {
 		mediaHandler.download(arg, p);
-		tag = `<img src="${mediaHandler.filePathRelative}" alt="">`;
+		tag = `<img  ${clsString} src="${mediaHandler.filePathRelative}" alt="">`;
 		return divConstructor(tag, 'row__image');
 	}
 	return null;
 };
 
-const linkConstructor = arg => {
+const linkConstructor = (arg, cls = null) => {
+	let clsString = cls !== null ? ` class="${cls}"` : '';
 	if (Array.isArray(arg)) {
 		return arg.map(item => {
-			return `<a href="${item}" target="_blank">${item}</a>`;
+			return `<a href="${item}" ${clsString} target="_blank">${item}</a>`;
 		});
 	} else if (arg !== undefined) {
-		return `<a href="${arg}" target="_blank">${arg}</a>`;
+		return `<a href="${arg}" ${clsString} target="_blank">${arg}</a>`;
 	}
 	return null;
 };
 
-const paragraphConstructor = arg => {
+const paragraphConstructor = (arg, cls = null) => {
+	let clsString = cls !== null ? ` class="${cls}"` : '';
 	if (Array.isArray(arg)) {
 		return arg.map(item => {
-			return `<p>${item}</p>`;
+			return `<p ${clsString}>${item}</p>`;
 		});
 	} else if (arg !== undefined && arg === "") {
-		return `<p>${arg}</p>`;
+		return `<p ${clsString} >${arg}</p>`;
+	}
+	return null;
+};
+
+const getClassName = arg => {
+	let className = arg.match(/\[class="?(.*?)"?\]/);
+	if (className !== null) {
+		return className[1];
 	}
 	return null;
 };
@@ -246,18 +269,8 @@ const bodyConstructor = dataObject => {
 					.map(name => name.toLowerCase())
 					.includes(key.toLowerCase())
 		);
-		let otherElements = newKeys.map(key => {
-			if (key.toLowerCase().includes('image')) {
-				return imageConstructor(dataObject[key]);
-			} else if (key.toLowerCase().includes('link')) {
-				return linkConstructor(dataObject[key]);
-			} else if (key.toLowerCase().includes('ignore')) {
-				return '';
-			} else {
-				return dataObject[key];
-			}
-		});
 
+		let otherElements = elementConstructor(dataObject, newKeys);
 		let otherElementsWorkingArray = Array.isArray(otherElements[0])
 			? zip(...otherElements)
 			: otherElements;
@@ -267,7 +280,6 @@ const bodyConstructor = dataObject => {
 			div += divConstructor(element, 'row__el');
 			block += `<div class="el">${div}</div>`;
 		});
-
 		body += `<div class="block__container"><div class="block">${block}</div></div>`;
 		body += ulConstructor(dataObject) || '';
 		return body;
