@@ -6,7 +6,7 @@ const OUTPUT = 'dist';
 const DIR = `${process.cwd()}/${OUTPUT}/`;
 import style from './styles.js';
 
-const styles = style.css;
+
 
 const collapseArray = arr => {
 	const result = {};
@@ -71,6 +71,8 @@ let divConstructor = (el, cls = '') => {
 				// check if item is not url
 				if (item === undefined) return null;
 				if (item.toLowerCase().includes('http')) {
+					return linkConstructor(item);
+				} else if (item.toLowerCase().includes('<img')) {
 					return item;
 				} else {
 					return `<p>${item}</p>`;
@@ -178,9 +180,8 @@ const headConstructor = arg => {
 					values.meta = `<meta name="${headKey}" content="${arg[headKey]}">`;
 				}
 			}
-			values.head = `<title>${values.title || ''}</title>${
-				values.description || ''
-			}${values.keywords || ''}${values.meta || ''}`;
+			values.head = `<title>${values.title || ''}</title>${values.description || ''
+				}${values.keywords || ''}${values.meta || ''}`;
 		}
 		return values;
 	}
@@ -214,6 +215,17 @@ const linkConstructor = arg => {
 	return null;
 };
 
+const paragraphConstructor = arg => {
+	if (Array.isArray(arg)) {
+		return arg.map(item => {
+			return `<p>${item}</p>`;
+		});
+	} else if (arg !== undefined && arg === "") {
+		return `<p>${arg}</p>`;
+	}
+	return null;
+};
+
 const bodyConstructor = dataObject => {
 	if (typeof dataObject === 'object' && dataObject !== null) {
 		let body = '';
@@ -239,6 +251,8 @@ const bodyConstructor = dataObject => {
 				return imageConstructor(dataObject[key]);
 			} else if (key.toLowerCase().includes('link')) {
 				return linkConstructor(dataObject[key]);
+			} else if (key.toLowerCase().includes('ignore')) {
+				return '';
 			} else {
 				return dataObject[key];
 			}
@@ -278,7 +292,7 @@ const buildHtml = (data, css) => {
 		header = headerConstructor(collapsedArray) || '';
 		body = bodyConstructor(collapsedArray) || '';
 	}
-	let cssInclude = css ? `<style type="text/css">${styles}</style>` : '';
+	let cssInclude = css ? `<link rel="stylesheet" href="style.css">` : '';
 	return `<!DOCTYPE html> <html> <head> <meta http-equiv="X-UA-Compatible" content="IE=edge"> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> ${head} ${cssInclude} </head><body><div class="container">${header} ${body}</div></body></html>`;
 };
 
@@ -296,6 +310,14 @@ const buildLinkedIndexPage = links => {
 	return indexPage;
 };
 
+async function generateCSS(css) {
+	if (!css) return;
+	const styles = style.css;
+	const filePath = path.join(DIR);
+	const fileName = path.join(filePath, `style.css`);
+	await dirHandler.createFile(fileName, styles);
+}
+
 async function generateSingleHtml(data, css, directory) {
 	const html = buildHtml(data, css);
 	const filePath = path.join(directory);
@@ -303,6 +325,9 @@ async function generateSingleHtml(data, css, directory) {
 	const fileName = path.join(filePath, `index.html`);
 	await dirHandler.createFile(fileName, html).then(() => {
 		console.log('HTML file generated!');
+	});
+	await generateCSS(css).then(() => {
+		console.log('CSS file generated!');
 	});
 }
 
