@@ -9,8 +9,7 @@
 		"sheetpages": "bin/sheet-pages.js"
 	},
 	"publishConfig": {
-		"access": "public",
-		"registry": "https://npm.pkg.github.com"
+		"access": "public"
 	},
 	"author": {
 		"name": "Alvin Ashiatey",
