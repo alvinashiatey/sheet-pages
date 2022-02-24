@@ -15,7 +15,7 @@ const collapseArray = arr => {
 	});
 	arr.forEach(item => {
 		for (const [k, value] of Object.entries(item)) {
-			if (item[k] !== '' && item[k] !== undefined) {
+			if (item[k] !== undefined) {
 				result[k].push(value);
 			}
 		}
@@ -205,12 +205,14 @@ const imageConstructor = (arg, cls = null) => {
 	let p = `${OUTPUT}/images/`;
 	if (Array.isArray(arg)) {
 		return arg.map(item => {
-			mediaHandler.download(item, p);
+			if (item === "") return null;
+			item.toLowerCase().includes('http') && mediaHandler.download(item, p);
 			tag = `<img  ${clsString} src="${mediaHandler.filePathRelative}" alt="">`;
 			return divConstructor(tag, 'row__image');
 		});
 	} else if (arg !== undefined) {
-		mediaHandler.download(arg, p);
+		if (item === "") return null;
+		arg.toLowerCase().includes('http') && mediaHandler.download(arg, p);
 		tag = `<img  ${clsString} src="${mediaHandler.filePathRelative}" alt="">`;
 		return divConstructor(tag, 'row__image');
 	}
@@ -233,9 +235,11 @@ const paragraphConstructor = (arg, cls = null) => {
 	let clsString = cls !== null ? ` class="${cls}"` : '';
 	if (Array.isArray(arg)) {
 		return arg.map(item => {
+			if (item === "") return null;
 			return `<p ${clsString}>${item}</p>`;
 		});
 	} else if (arg !== undefined && arg === "") {
+		if (item === "") return null;
 		return `<p ${clsString} >${arg}</p>`;
 	}
 	return null;
