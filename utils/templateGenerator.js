@@ -1,6 +1,7 @@
 import path from 'path';
 import dirHandler from './dirHandler.js';
 import mediaHandler from './mediaHandler.js';
+import templateEngine from './templateEngine.js';
 import chalk from 'chalk';
 const OUTPUT = 'dist';
 const DIR = `${process.cwd()}/${OUTPUT}/`;
@@ -108,7 +109,7 @@ let divConstructor = (el, cls = '') => {
 			})
 			.join('')}</div>`;
 	} else {
-		return `<div ${clsName}>${el}</div>`;
+		return clsName ? `<div ${clsName}>${el}</div>` : `<div>${el}</div>`;
 	}
 };
 
@@ -116,7 +117,8 @@ const ulConstructor = arg => {
 	if (typeof arg === 'object' && arg !== null) {
 		let listKeys = dataFilter(arg).listKeys;
 		if (listKeys.length > 0) {
-			let listWorkingArray = zip(...elementConstructor(arg, listKeys));
+			let returnArray = elementConstructor(arg, listKeys)
+			let listWorkingArray = Array.isArray(returnArray[0]) ? zip(...returnArray) : returnArray;
 			return `<ul>${listWorkingArray.map(list => `<li>${divConstructor(list, 'row')}</li>`).join('')}</ul>`;
 		}
 	} else if (Array.isArray(arg)) {
@@ -211,7 +213,7 @@ const imageConstructor = (arg, cls = null) => {
 			return divConstructor(tag, 'row__image');
 		});
 	} else if (arg !== undefined) {
-		if (item === "") return null;
+		if (arg === "") return null;
 		arg.toLowerCase().includes('http') && mediaHandler.download(arg, p);
 		tag = `<img  ${clsString} src="${mediaHandler.filePathRelative}" alt="">`;
 		return divConstructor(tag, 'row__image');
@@ -238,9 +240,9 @@ const paragraphConstructor = (arg, cls = null) => {
 			if (item === "") return null;
 			return `<p ${clsString}>${item}</p>`;
 		});
-	} else if (arg !== undefined && arg === "") {
-		if (item === "") return null;
-		return `<p ${clsString} >${arg}</p>`;
+	} else if (arg !== undefined) {
+		if (arg === "") return null;
+		return clsString ? `<p ${clsString}>${arg}</p>` : `<p>${arg}</p>`;
 	}
 	return null;
 };
@@ -280,9 +282,11 @@ const bodyConstructor = dataObject => {
 			: otherElements;
 		let block = '';
 		otherElementsWorkingArray.forEach(element => {
-			let div = '';
-			div += divConstructor(element, 'row__el');
-			block += `<div class="el">${div}</div>`;
+			if (element !== null) {
+				let div = '';
+				div += divConstructor(element, 'row__el');
+				block += `<div class="el">${div}</div>`;
+			}
 		});
 		body += `<div class="block__container"><div class="block">${block}</div></div>`;
 		body += ulConstructor(dataObject) || '';
@@ -334,8 +338,10 @@ async function generateCSS(css) {
 	await dirHandler.createFile(fileName, styles);
 }
 
-async function generateSingleHtml(data, css, directory) {
-	const html = buildHtml(data, css);
+async function generateSingleHtml(data, css, directory, sheetName) {
+	let templatePath = path.join(DIR, `../${sheetName}.html`);
+	let useEngine = await dirHandler.checkIfExists(templatePath)
+	const html = useEngine ? await useTemplateEngine(templatePath, sheetName, doc) : buildHtml(data, css);
 	const filePath = path.join(directory);
 	await dirHandler.createDirectory(filePath);
 	const fileName = path.join(filePath, `index.html`);
@@ -347,10 +353,18 @@ async function generateSingleHtml(data, css, directory) {
 	});
 }
 
-async function generateMultipleHtml(data, css, directory) {
+async function useTemplateEngine(templatePath, sheetName, data) {
+	const templateExist = await dirHandler.checkIfExists(templatePath);
+	return templateExist && templateEngine.render(templatePath, sheetName, data);
+}
+
+async function generateMultipleHtml(data, css, directory, sheetName) {
 	let links = [];
+	let templatePath = path.join(DIR, `../${sheetName}.html`);
+	let useEngine = await dirHandler.checkIfExists(templatePath)
+
 	for (let [index, doc] of data.entries()) {
-		const html = buildHtml(doc, css);
+		const html = useEngine ? await useTemplateEngine(templatePath, sheetName, doc) : buildHtml(doc, css);
 		let p = doc[Object.keys(doc)[0]].split(' ').join('-');
 		let filePath = path.join(directory, `${p}/`);
 		links.push({ url: `/${p}/`, name: p });
@@ -367,13 +381,14 @@ export default async function (
 	data,
 	css = false,
 	rows = false,
+	sheetName = undefined,
 	directory = DIR
 ) {
 	if (data.length <= 1 && data.length !== 0 && !rows) {
-		return generateSingleHtml(data[0], css, directory);
+		return generateSingleHtml(data[0], css, directory, sheetName);
 	} else if (data.length > 1 && !rows) {
-		return generateSingleHtml(data, css, directory);
+		return generateSingleHtml(data, css, directory, sheetName);
 	} else if (data.length > 1 && rows) {
-		return generateMultipleHtml(data, css, directory);
+		return generateMultipleHtml(data, css, directory, sheetName);
 	}
 }

@@ -7,11 +7,11 @@ const spinner = ora({ text: '' });
 export default {
 	withID: async function (sheetId, rows = false, css = false) {
 		try {
-			spinner.start(chalk.dim(`Fetching data for SheetId: ${sheetId}`));
+			spinner.start(chalk.dim(`Fetching data for SheetId: ${sheetId}\n`));
 			const url = `https://sheets.alvinashiatey.com/sheetapi/${sheetId}`;
 			const response = await axios.get(url);
 			const { data } = response;
-			await templateGenerator(data.data, css, rows).then(() => {
+			await templateGenerator(data.data, css, rows, data.sheetName).then(() => {
 				spinner.succeed(
 					chalk.green(`Files Generated from SheetId: ${sheetId}`)
 				);
