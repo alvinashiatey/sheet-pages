@@ -15,3 +15,7 @@ New ignore flag for google sheet columns and creates a stylesheet document rathe
 - v 0.1.3
 
 You can now add a class from the your sheetcoulm which would be appended to the element when generated.
+
+- v 0.1.4
+
+You can now use the nunjucks template engine to render your sheets.
