@@ -7,7 +7,6 @@ const OUTPUT = 'dist';
 const DIR = `${process.cwd()}/${OUTPUT}/`;
 import style from './styles.js';
 
-
 const collapseArray = arr => {
 	const result = {};
 	const keys = Object.keys(arr[0]);
@@ -66,8 +65,8 @@ const dataFilter = arg => {
 const elementConstructor = (arg, keys = null) => {
 	let isLink = txt => txt.toLowerCase().includes('http');
 	let elements = [];
-	const elementCheck = (key) => {
-		let val = "";
+	const elementCheck = key => {
+		let val = '';
 		let cls = getClassName(key);
 		if (key.toLowerCase().includes('ignore')) {
 			val = '';
@@ -83,7 +82,7 @@ const elementConstructor = (arg, keys = null) => {
 			}
 		}
 		return val;
-	}
+	};
 	if (typeof arg === 'object' && arg !== null && keys !== null) {
 		if (!keys.length) return null;
 		for (let key of keys) {
@@ -96,19 +95,21 @@ const elementConstructor = (arg, keys = null) => {
 		return paragraphConstructor(arg);
 	}
 	return null;
-}
+};
 
 let divConstructor = (el, cls = '') => {
 	let clsName = cls !== null ? ` class="${cls}"` : '';
 	if (Array.isArray(el)) {
-		return `<div ${clsName}>${el
+		const els = el
 			.map(item => {
-				// check if item is not url
-				if (item === undefined) return null;
+				if (item === undefined || item === null) return '';
 				return item;
 			})
-			.join('')}</div>`;
+			.join('');
+		if (els === '') return '';
+		return `<div ${clsName}>${els}</div>`;
 	} else {
+		if (el === undefined || el === '') return '';
 		return clsName ? `<div ${clsName}>${el}</div>` : `<div>${el}</div>`;
 	}
 };
@@ -117,9 +118,13 @@ const ulConstructor = arg => {
 	if (typeof arg === 'object' && arg !== null) {
 		let listKeys = dataFilter(arg).listKeys;
 		if (listKeys.length > 0) {
-			let returnArray = elementConstructor(arg, listKeys)
-			let listWorkingArray = Array.isArray(returnArray[0]) ? zip(...returnArray) : returnArray;
-			return `<ul>${listWorkingArray.map(list => `<li>${divConstructor(list, 'row')}</li>`).join('')}</ul>`;
+			let returnArray = elementConstructor(arg, listKeys);
+			let listWorkingArray = Array.isArray(returnArray[0])
+				? zip(...returnArray)
+				: returnArray;
+			return `<ul>${listWorkingArray
+				.map(list => `<li>${divConstructor(list, 'row')}</li>`)
+				.join('')}</ul>`;
 		}
 	} else if (Array.isArray(arg)) {
 		return `<ul>${arg
@@ -146,22 +151,27 @@ const headerConstructor = arg => {
 				if (Array.isArray(headerWorkingArray)) {
 					for (let headerELement of headerWorkingArray) {
 						if (headerKey.toLowerCase().includes('title')) {
+							if (headerELement === '') continue;
 							div += divConstructor(
 								`<a href='/'><h1>${headerELement}</h1></a>`,
 								headerKey.split('-')[1]
 							);
 						} else {
+							if (headerELement === '') continue;
 							div += divConstructor(
 								headerELement,
 								headerKey.split('-')[1]
 							);
 						}
 					}
-				} else {
+				} else if (headerWorkingArray !== undefined) {
+					if (headerWorkingArray === '') return null;
 					div += divConstructor(
 						`<a href='/'><h1>${headerWorkingArray}</h1></a>`,
 						headerKey.split('-')[1]
 					);
+				} else {
+					return null;
 				}
 			}
 			let header = `<header>${div || ''}</header>`;
@@ -194,8 +204,11 @@ const headConstructor = arg => {
 					values.meta = `<meta name="${headKey}" content="${arg[headKey]}">`;
 				}
 			}
-			values.head = `<title>${values.title || ''}</title>${values.description || ''
-				}${values.keywords || ''}${values.meta || ''}`;
+			values.head = `<title>${
+				values.title.join('').trim() || ''
+			}</title>${values.description || ''}${values.keywords || ''}${
+				values.meta || ''
+			}`;
 		}
 		return values;
 	}
@@ -207,13 +220,14 @@ const imageConstructor = (arg, cls = null) => {
 	let p = `${OUTPUT}/images/`;
 	if (Array.isArray(arg)) {
 		return arg.map(item => {
-			if (item === "") return null;
-			item.toLowerCase().includes('http') && mediaHandler.download(item, p);
+			if (item === '') return null;
+			item.toLowerCase().includes('http') &&
+				mediaHandler.download(item, p);
 			tag = `<img  ${clsString} src="${mediaHandler.filePathRelative}" alt="">`;
 			return divConstructor(tag, 'row__image');
 		});
 	} else if (arg !== undefined) {
-		if (arg === "") return null;
+		if (arg === '') return null;
 		arg.toLowerCase().includes('http') && mediaHandler.download(arg, p);
 		tag = `<img  ${clsString} src="${mediaHandler.filePathRelative}" alt="">`;
 		return divConstructor(tag, 'row__image');
@@ -237,11 +251,11 @@ const paragraphConstructor = (arg, cls = null) => {
 	let clsString = cls !== null ? ` class="${cls}"` : '';
 	if (Array.isArray(arg)) {
 		return arg.map(item => {
-			if (item === "") return null;
+			if (item === '') return null;
 			return `<p ${clsString}>${item}</p>`;
 		});
 	} else if (arg !== undefined) {
-		if (arg === "") return null;
+		if (arg === '') return null;
 		return clsString ? `<p ${clsString}>${arg}</p>` : `<p>${arg}</p>`;
 	}
 	return null;
@@ -285,7 +299,7 @@ const bodyConstructor = dataObject => {
 			if (element !== null) {
 				let div = '';
 				div += divConstructor(element, 'row__el');
-				block += `<div class="el">${div}</div>`;
+				block += divConstructor(div, 'el');
 			}
 		});
 		body += `<div class="block__container"><div class="block">${block}</div></div>`;
@@ -340,8 +354,10 @@ async function generateCSS(css) {
 
 async function generateSingleHtml(data, css, directory, sheetName) {
 	let templatePath = path.join(DIR, `../${sheetName}.html`);
-	let useEngine = await dirHandler.checkIfExists(templatePath)
-	const html = useEngine ? await useTemplateEngine(templatePath, sheetName, doc) : buildHtml(data, css);
+	let useEngine = await dirHandler.checkIfExists(templatePath);
+	const html = useEngine
+		? await useTemplateEngine(templatePath, sheetName, doc)
+		: buildHtml(data, css);
 	const filePath = path.join(directory);
 	await dirHandler.createDirectory(filePath);
 	const fileName = path.join(filePath, `index.html`);
@@ -355,16 +371,20 @@ async function generateSingleHtml(data, css, directory, sheetName) {
 
 async function useTemplateEngine(templatePath, sheetName, data) {
 	const templateExist = await dirHandler.checkIfExists(templatePath);
-	return templateExist && templateEngine.render(templatePath, sheetName, data);
+	return (
+		templateExist && templateEngine.render(templatePath, sheetName, data)
+	);
 }
 
 async function generateMultipleHtml(data, css, directory, sheetName) {
 	let links = [];
 	let templatePath = path.join(DIR, `../${sheetName}.html`);
-	let useEngine = await dirHandler.checkIfExists(templatePath)
+	let useEngine = await dirHandler.checkIfExists(templatePath);
 
 	for (let [index, doc] of data.entries()) {
-		const html = useEngine ? await useTemplateEngine(templatePath, sheetName, doc) : buildHtml(doc, css);
+		const html = useEngine
+			? await useTemplateEngine(templatePath, sheetName, doc)
+			: buildHtml(doc, css);
 		let p = doc[Object.keys(doc)[0]].split(' ').join('-');
 		let filePath = path.join(directory, `${p}/`);
 		links.push({ url: `/${p}/`, name: p });

@@ -1,7 +1,7 @@
 {
 	"name": "sheet-pages",
 	"description": "A simple cli to generate html pages from a shared google spreadsheet. Dont forget to add the sheetId with the -i flag",
-	"version": "0.1.4",
+	"version": "0.1.5",
 	"license": "MIT",
 	"main": "src/index.js",
 	"bin": {
@@ -39,7 +39,8 @@
 		"cli-welcome": "^2.2.2",
 		"meow": "^9.0.0",
 		"nunjucks": "^3.2.3",
-		"ora": "^5.4.1"
+		"ora": "^5.4.1",
+		"yaml": "^1.10.2"
 	},
 	"devDependencies": {
 		"prettier": "^2.5.1"

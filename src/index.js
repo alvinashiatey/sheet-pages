@@ -9,6 +9,7 @@ import init from '../utils/init.js';
 import cli from '../utils/cli.js';
 import log from '../utils/log.js';
 import sheet from '../utils/sheet.js';
+import config from '../utils/getConfig.js';
 
 const input = cli.input;
 const flags = cli.flags;
@@ -16,18 +17,26 @@ const { clear, debug } = flags;
 
 export async function sheet_cli() {
 	init({ clear });
+	const { id, sheetName, rows, css } = handleArgs(flags, config());
 	input.includes(`help`) && cli.showHelp(0);
-	!flags.sheetId && cli.showHelp(0);
-	!flags.sheetName &&
-		flags.sheetId &&
-		(await sheet.withID(flags.sheetId, flags.rows, flags.css));
-	flags.sheetName &&
-		flags.sheetId &&
-		(await sheet.withName(
-			flags.sheetId,
-			flags.sheetName,
-			flags.rows,
-			flags.css
-		));
+	!id && cli.showHelp(0);
+	!sheetName && id && (await sheet.withID(id, rows, css));
+	sheetName && id && (await sheet.withName(id, sheetName, rows, css));
 	debug && log(flags);
 }
+
+const handleArgs = (flag, conf) => {
+	let f = {};
+	if (conf !== false) {
+		f.id = conf.id;
+		f.sheetName = conf.SheetName;
+		f.rows = conf.rows;
+		f.css = conf.css;
+	} else {
+		f.id = flag.sheetId;
+		f.sheetName = flag.sheetName;
+		f.rows = flag.rows;
+		f.css = flag.css;
+	}
+	return f;
+};
