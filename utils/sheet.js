@@ -11,11 +11,13 @@ export default {
 			const url = `https://sheets.alvinashiatey.com/sheetapi/${sheetId}`;
 			const response = await axios.get(url);
 			const { data } = response;
-			await templateGenerator(data.data, css, rows, data.sheetName).then(() => {
-				spinner.succeed(
-					chalk.green(`Files Generated from SheetId: ${sheetId}`)
-				);
-			});
+			await templateGenerator(data.data, css, rows, data.sheetName).then(
+				() => {
+					spinner.succeed(
+						chalk.green(`Files Generated from SheetId: ${sheetId}`)
+					);
+				}
+			);
 		} catch (error) {
 			console.log(error.message);
 			process.exit(1);

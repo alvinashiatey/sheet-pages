@@ -1,9 +1,10 @@
 import fs from 'fs';
+import { join, resolve } from 'path';
 
 class DirectoryHandler {
 	static checkIfExists(path) {
 		try {
-			return fs.accessSync(path);
+			return fs.existsSync(path);
 		} catch (e) {
 			return false;
 		}
@@ -17,6 +18,17 @@ class DirectoryHandler {
 		fs.writeFile(path, data, err => {
 			if (err) throw err;
 		});
+	}
+	static copyFile(path, dest) {
+		try {
+			const src = join(process.cwd(), path);
+			const destPath = resolve(process.cwd(), dest, path);
+			fs.copyFile(src, destPath, err => {
+				if (err) throw err;
+			});
+		} catch (e) {
+			console.log(e);
+		}
 	}
 }
 

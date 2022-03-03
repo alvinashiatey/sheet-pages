@@ -17,7 +17,7 @@ const { clear, debug } = flags;
 
 export async function sheet_cli() {
 	init({ clear });
-	const { id, sheetName, rows, css } = handleArgs(flags, config());
+	const { id, sheetName, rows, css } = handleArgs(flags, config);
 	input.includes(`help`) && cli.showHelp(0);
 	!id && cli.showHelp(0);
 	!sheetName && id && (await sheet.withID(id, rows, css));

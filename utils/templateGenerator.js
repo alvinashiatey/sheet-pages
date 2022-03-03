@@ -3,6 +3,7 @@ import dirHandler from './dirHandler.js';
 import mediaHandler from './mediaHandler.js';
 import templateEngine from './templateEngine.js';
 import chalk from 'chalk';
+import config from '../utils/getConfig.js';
 const OUTPUT = 'dist';
 const DIR = `${process.cwd()}/${OUTPUT}/`;
 import style from './styles.js';
@@ -357,6 +358,17 @@ async function generateCSS(css) {
 	}
 }
 
+function handleCopyFiles() {
+	let { copyFiles, outputPath } = config;
+	if (copyFiles) {
+		console.log('Copying files...');
+		outputPath = outputPath || DIR;
+		copyFiles.forEach(file => {
+			dirHandler.copyFile(file, outputPath);
+		});
+	}
+}
+
 async function useTemplateEngine(templatePath, sheetName, data) {
 	try {
 		return templateEngine.render(templatePath, sheetName, data);
@@ -366,22 +378,20 @@ async function useTemplateEngine(templatePath, sheetName, data) {
 }
 
 async function generateSingleHtml(data, css, directory, sheetName) {
-	console.log(sheetName);
 	try {
+		const filePath = path.join(directory);
+		await dirHandler.createDirectory(filePath);
 		let templatePath = path.join(DIR, `../${sheetName}.html`);
 		let useEngine = dirHandler.checkIfExists(templatePath);
 		const html = useEngine
 			? await useTemplateEngine(templatePath, sheetName, data)
 			: buildHtml(data, css);
-		const filePath = path.join(directory);
-		await dirHandler.createDirectory(filePath);
 		const fileName = path.join(filePath, `index.html`);
 		await dirHandler.createFile(fileName, html).then(() => {
 			console.log('HTML file generated!');
 		});
-		await generateCSS(css).then(() => {
-			console.log('CSS file generated!');
-		});
+		await generateCSS(css);
+		handleCopyFiles();
 	} catch (e) {
 		console.log(e);
 	}
@@ -393,13 +403,13 @@ async function generateMultipleHtml(data, css, directory, sheetName) {
 		let templatePath = path.join(DIR, `../${sheetName}.html`);
 		let useEngine = dirHandler.checkIfExists(templatePath);
 		for (let [index, doc] of data.entries()) {
+			let p = doc[Object.keys(doc)[0]].split(' ').join('-');
+			let filePath = path.join(directory, `${p}/`);
+			await dirHandler.createDirectory(filePath);
 			const html = useEngine
 				? await useTemplateEngine(templatePath, sheetName, doc)
 				: buildHtml(doc, css);
-			let p = doc[Object.keys(doc)[0]].split(' ').join('-');
-			let filePath = path.join(directory, `${p}/`);
 			links.push({ url: `/${p}/`, name: p });
-			await dirHandler.createDirectory(filePath);
 			const fileName = path.join(filePath, `index.html`);
 			await dirHandler.createFile(fileName, html).then(() => {
 				console.log(

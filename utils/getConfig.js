@@ -1,7 +1,7 @@
 import fs from 'fs';
 import YAML from 'yaml';
 
-export default function getConfig() {
+function getConfig() {
 	const configPath = `${process.cwd()}/config.yml`;
 	const configExists = fs.existsSync(configPath);
 	if (!configExists) {
@@ -10,3 +10,5 @@ export default function getConfig() {
 	const configFile = fs.readFileSync(configPath, 'utf8');
 	return YAML.parse(configFile);
 }
+
+export default getConfig();
