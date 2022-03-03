@@ -3,14 +3,25 @@ import ora from 'ora';
 import chalk from 'chalk';
 import templateGenerator from './templateGenerator.js';
 const spinner = ora({ text: '' });
+import Cache from './cache.js';
+
+const getCache = (name) => {
+	return new Cache(name);
+}
 
 export default {
 	withID: async function (sheetId, rows = false, css = false) {
 		try {
-			spinner.start(chalk.dim(`Fetching data for SheetId: ${sheetId}\n`));
-			const url = `https://sheets.alvinashiatey.com/sheetapi/${sheetId}`;
-			const response = await axios.get(url);
-			const { data } = response;
+			let data = {};
+			if (!getCache(sheetId).isEmpty) {
+				data = getCache(sheetId).get('data');
+			} else {
+				spinner.start(chalk.dim(`Fetching data for SheetId: ${sheetId}\n`));
+				const url = `https://sheets.alvinashiatey.com/sheetapi/${sheetId}`;
+				const response = await axios.get(url);
+				({ data } = response);
+				getCache(sheetId).set('data', data);
+			}
 			await templateGenerator(data.data, css, rows, data.sheetName).then(
 				() => {
 					spinner.succeed(
