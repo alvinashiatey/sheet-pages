@@ -6,6 +6,7 @@ import chalk from 'chalk';
 const OUTPUT = 'dist';
 const DIR = `${process.cwd()}/${OUTPUT}/`;
 import style from './styles.js';
+templateEngine.addShortcode('image', mediaHandler.imageShortCode);
 
 const collapseArray = arr => {
 	const result = {};
@@ -345,56 +346,71 @@ const buildLinkedIndexPage = links => {
 };
 
 async function generateCSS(css) {
-	if (!css) return;
-	const styles = style.css;
-	const filePath = path.join(DIR);
-	const fileName = path.join(filePath, `style.css`);
-	await dirHandler.createFile(fileName, styles);
-}
-
-async function generateSingleHtml(data, css, directory, sheetName) {
-	let templatePath = path.join(DIR, `../${sheetName}.html`);
-	let useEngine = await dirHandler.checkIfExists(templatePath);
-	const html = useEngine
-		? await useTemplateEngine(templatePath, sheetName, doc)
-		: buildHtml(data, css);
-	const filePath = path.join(directory);
-	await dirHandler.createDirectory(filePath);
-	const fileName = path.join(filePath, `index.html`);
-	await dirHandler.createFile(fileName, html).then(() => {
-		console.log('HTML file generated!');
-	});
-	await generateCSS(css).then(() => {
-		console.log('CSS file generated!');
-	});
+	try {
+		if (!css) return;
+		const styles = style.css;
+		const filePath = path.join(DIR);
+		const fileName = path.join(filePath, `style.css`);
+		await dirHandler.createFile(fileName, styles);
+	} catch (err) {
+		console.log(err);
+	}
 }
 
 async function useTemplateEngine(templatePath, sheetName, data) {
-	const templateExist = await dirHandler.checkIfExists(templatePath);
-	return (
-		templateExist && templateEngine.render(templatePath, sheetName, data)
-	);
+	try {
+		return templateEngine.render(templatePath, sheetName, data);
+	} catch (e) {
+		console.log(e);
+	}
 }
 
-async function generateMultipleHtml(data, css, directory, sheetName) {
-	let links = [];
-	let templatePath = path.join(DIR, `../${sheetName}.html`);
-	let useEngine = await dirHandler.checkIfExists(templatePath);
-
-	for (let [index, doc] of data.entries()) {
+async function generateSingleHtml(data, css, directory, sheetName) {
+	console.log(sheetName);
+	try {
+		let templatePath = path.join(DIR, `../${sheetName}.html`);
+		let useEngine = dirHandler.checkIfExists(templatePath);
 		const html = useEngine
-			? await useTemplateEngine(templatePath, sheetName, doc)
-			: buildHtml(doc, css);
-		let p = doc[Object.keys(doc)[0]].split(' ').join('-');
-		let filePath = path.join(directory, `${p}/`);
-		links.push({ url: `/${p}/`, name: p });
+			? await useTemplateEngine(templatePath, sheetName, data)
+			: buildHtml(data, css);
+		const filePath = path.join(directory);
 		await dirHandler.createDirectory(filePath);
 		const fileName = path.join(filePath, `index.html`);
 		await dirHandler.createFile(fileName, html).then(() => {
-			console.log('HTML file generated. Path:' + chalk.yellow(fileName));
+			console.log('HTML file generated!');
 		});
+		await generateCSS(css).then(() => {
+			console.log('CSS file generated!');
+		});
+	} catch (e) {
+		console.log(e);
 	}
-	buildLinkedIndexPage(links);
+}
+
+async function generateMultipleHtml(data, css, directory, sheetName) {
+	try {
+		let links = [];
+		let templatePath = path.join(DIR, `../${sheetName}.html`);
+		let useEngine = dirHandler.checkIfExists(templatePath);
+		for (let [index, doc] of data.entries()) {
+			const html = useEngine
+				? await useTemplateEngine(templatePath, sheetName, doc)
+				: buildHtml(doc, css);
+			let p = doc[Object.keys(doc)[0]].split(' ').join('-');
+			let filePath = path.join(directory, `${p}/`);
+			links.push({ url: `/${p}/`, name: p });
+			await dirHandler.createDirectory(filePath);
+			const fileName = path.join(filePath, `index.html`);
+			await dirHandler.createFile(fileName, html).then(() => {
+				console.log(
+					'HTML file generated. Path:' + chalk.yellow(fileName)
+				);
+			});
+		}
+		buildLinkedIndexPage(links);
+	} catch (e) {
+		console.log(e);
+	}
 }
 
 export default async function (

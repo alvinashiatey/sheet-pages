@@ -1,8 +1,12 @@
 import fs from 'fs';
 
 class DirectoryHandler {
-	static async checkIfExists(path) {
-		return fs.existsSync(path);
+	static checkIfExists(path) {
+		try {
+			return fs.accessSync(path);
+		} catch (e) {
+			return false;
+		}
 	}
 	static async createDirectory(path) {
 		if (!fs.existsSync(path)) {
