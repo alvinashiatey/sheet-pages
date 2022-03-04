@@ -27,10 +27,14 @@
 	],
 	"type": "module",
 	"scripts": {
-		"format": "prettier --write \"./**/*.{js,json}\""
+		"format": "prettier --write \"./**/*.{js,json}\"",
+		"test": "jest --watchAll --verbose"
 	},
 	"dependencies": {
+		"@babel/core": "^7.17.5",
+		"@babel/preset-env": "^7.16.11",
 		"axios": "^0.24.0",
+		"babel-jest": "^27.5.1",
 		"chalk": "^5.0.0",
 		"cli-alerts": "^1.2.2",
 		"cli-handle-error": "^4.4.0",
@@ -43,6 +47,7 @@
 		"yaml": "^1.10.2"
 	},
 	"devDependencies": {
+		"jest": "^27.5.1",
 		"prettier": "^2.5.1"
 	}
 }

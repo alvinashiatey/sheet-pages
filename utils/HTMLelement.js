@@ -1,89 +1,166 @@
+class HTMLElement {
+	element = null;
+	children = [];
+	content = '';
+	attr = {};
+	classList = [];
+	constructor(element) {
+		this.element = element;
+		return this;
+	}
+	/***
+	 * @params {Object} attributes - create attributes attached to the element
+	 */
+	createAttribute(attributes) {
+		for (let attr in attributes) {
+			this.attr[attr] = value[attr];
+		}
+	}
+
+	addClass(className) {
+		this.classList.push(className);
+		this.setAttribute('class', this.classList.join(' '));
+		return this;
+	}
+
+	setAttribute(name, value) {
+		this.attr[name] = value;
+	}
+
+	getAttribute(name) {
+		return this.attr[name];
+	}
+
+	set textContent(content) {
+		if (content instanceof HTMLElement) {
+			throw new Error('Cannot set textContent to HTMLElement');
+		} else {
+			this.content = content;
+		}
+		return this;
+	}
+
+	appendChild(element) {
+		this.children.push(element);
+		this.content += this.children.map(child => child.render()).join('');
+	}
+
+	render() {
+		let returnAttrString = Object.keys(this.attr)
+			.map(key => `${key}="${this.attr[key]}"`)
+			.join(' ')
+			.trim();
+		if (this.isSelfClosing()) {
+			return returnAttrString
+				? `<${this.element} ${returnAttrString}>`
+				: `<${this.element}>`;
+		} else {
+			return returnAttrString
+				? `<${this.element} ${returnAttrString}>${this.content}</${this.element}>`
+				: `<${this.element}>${this.content}</${this.element}>`;
+		}
+	}
+
+	isSelfClosing() {
+		let selfClosingTags = [
+			'area',
+			'base',
+			'br',
+			'col',
+			'embed',
+			'hr',
+			'img',
+			'input',
+			'link',
+			'meta',
+			'param',
+			'source',
+			'track',
+			'wbr'
+		];
+		return selfClosingTags.includes(this.element);
+	}
+}
+
 class HTML {
-        elements = {};
+	elements = {};
+	lang = 'en';
+	title = '';
+	constructor(options = {}) {
+		this.elements = {};
+		this.lang = options.lang || 'en';
+		this.createBody();
+		this.createHead();
+	}
 
-        append(entry) {
-                this.elements[entry.element] = entry
-        }
-        render() {
-                let result = `<!DOCTYPE html> <html>`;
-                for (let key in this.elements) {
-                        result += this.elements[key].render();
-                }
-                result += `</html>`;
-                return result;
-        }
+	#initialMeta() {
+		let meta1 = this.createElement('meta');
+		meta1.setAttribute('charset', 'utf-8');
+		this.mainHead.appendChild(meta1);
+		let meta2 = this.createElement('meta');
+		meta2.setAttribute('name', 'viewport');
+		meta2.setAttribute('content', 'width=device-width, initial-scale=1');
+		this.mainHead.appendChild(meta2);
+	}
+
+	createHead() {
+		this.mainHead = this.createElement('head');
+		this.elements['head'] = this.mainHead;
+		this.#initialMeta();
+	}
+
+	set title(val) {
+		this.title = val;
+		let titleElement = this.createElement('title');
+		titleElement.textContent(val);
+		this.head.appendChild(titleElement);
+	}
+
+	get head() {
+		return this.elements['head'];
+	}
+
+	createBody() {
+		this.mainBody = this.createElement('body');
+		this.elements['body'] = this.mainBody;
+	}
+
+	get body() {
+		return this.elements['body'];
+	}
+
+	createElement(tagName) {
+		let element = new HTMLElement(tagName);
+		this.elements[tagName] = element;
+		return this.elements[tagName];
+	}
+
+	set style(path) {
+		let link = this.createElement('link');
+		link.setAttribute('rel', 'stylesheet');
+		link.setAttribute('href', path);
+		this.head.appendChild(link);
+	}
+
+	getByClassName(className) {
+		return this.elements['body'].children.filter(child =>
+			child.classList.includes(className)
+		);
+	}
+
+	getById(id) {
+		return this.elements['body'].children.filter(
+			child => child.attr.id === id
+		);
+	}
+
+	compile() {
+		return `<!DOCTYPE html>
+                <html lang="${this.lang}">
+                ${this.elements['head'] && this.elements['head'].render()}
+                ${this.elements['body'].render()}
+                </html>`;
+	}
 }
 
-class HTMLelement {
-        element = null;
-        children = []
-        content = null;
-        attr = {};
-
-        createElement(tagName) {
-                this.element = tagName;
-                return this
-        }
-        createAttribute(name, value = null) {
-                this.attr[name] = value
-                // return a setter function to set the value
-                return {
-                        value: (val) => {
-                                this.attr[name] = val
-                        }
-                }
-        }
-        setAttribute(name, value) {
-                this.attr[name] = value
-        }
-        getAttribute(name) {
-                return this.attr[name]
-        }
-        textContent(content) {
-                if (content instanceof HTMLelement) {
-                        this.children.push(content)
-                        this.content = this.children.map(child => child.render()).join('')
-                } else {
-                        this.content = content
-                }
-                return this
-        }
-        append(location, element) {
-                if (location.toLowerCase() === 'before') {
-                        this.children.unshift(element)
-                } else if (location.toLowerCase() === 'after') {
-                        this.children.push(element)
-                } else {
-                        throw new Error('Invalid location')
-                }
-        }
-        render() {
-                let str = `<${this.element}`;
-                for (let key in this.attr) {
-                        str += ` ${key}="${this.attr[key]}"`
-                }
-                str += `>${this.content}</${this.element}>`
-                return str
-        }
-
-
-}
-
-class HeadElement extends HTMLelement {
-        constructor(content) {
-                super()
-                this.createElement('head')
-                this.content(content)
-        }
-}
-
-class MetaElement extends HTMLElement {
-        constructor(content) {
-                super()
-                this.createElement('meta')
-                this.content(content)
-        }
-}
-
-
-
+export { HTMLElement, HTML };
