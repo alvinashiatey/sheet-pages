@@ -3,6 +3,11 @@ import ora from 'ora';
 import chalk from 'chalk';
 import HtmlGenerator from './HtmlGenerator.js';
 const spinner = ora({ text: '' });
+import Cache from './cache.js';
+
+const getCache = (name) => {
+	return new Cache(name);
+}
 
 export default {
 	withID: async function (sheetId, rows = false, css = false, config = {}) {

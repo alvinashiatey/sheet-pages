@@ -1,6 +1,7 @@
 import axios from 'axios';
 import fs from 'fs';
 import path from 'path';
+import Cache from './Cache.js';
 const OUTPUT = 'dist';
 const DIR = `${process.cwd()}/${OUTPUT}/images`;
 const CACHE = `${process.cwd()}/.cache/`;
@@ -9,9 +10,7 @@ class MediaHandler {
 	static filePathRelative = null;
 	static counter = 0;
 	static cacheDate = new Date().getTime();
-	static cache = {
-		cacheDate: MediaHandler.cacheDate
-	};
+	static cache = new Cache('images');
 	static #validateURL(url) {
 		if (!url) return false;
 		if (url.toLowerCase().includes('http')) {
@@ -84,40 +83,13 @@ class MediaHandler {
 	}
 
 	static addToCache(url, val) {
-		if (!fs.existsSync(CACHE)) fs.mkdirSync(CACHE);
-		const filePath = path.join(CACHE, `sheet.cache.json`);
-		if (fs.existsSync(filePath)) {
-			MediaHandler.cache = JSON.parse(fs.readFileSync(filePath));
-			MediaHandler.cache[url] = val;
-			fs.writeFileSync(filePath, JSON.stringify(MediaHandler.cache));
-		} else {
-			MediaHandler.cache[url] = val;
-			fs.writeFileSync(filePath, JSON.stringify(MediaHandler.cache));
-		}
+		MediaHandler.cache.set(url, val);
 	}
 
 	static getFromCache(url) {
-		const filePath = path.join(CACHE, `sheet.cache.json`);
-		if (fs.existsSync(filePath) && MediaHandler.isCacheValid(1)) {
-			MediaHandler.cache = JSON.parse(fs.readFileSync(filePath));
-			return MediaHandler.cache[url];
-		}
-		return false;
+		return MediaHandler.cache.get(url);
 	}
 
-	static isCacheValid(day) {
-		// check if cacheDate has elapsed since a day
-		const cacheDate = new Date(MediaHandler.cache.cacheDate);
-		const now = new Date();
-		const diff = now.getTime() - cacheDate.getTime();
-		const diffDays = Math.ceil(diff / (1000 * 3600 * 24));
-		if (diffDays > day) {
-			MediaHandler.cacheDate = new Date().getTime();
-			return false;
-		} else {
-			return true;
-		}
-	}
 }
 
 export default MediaHandler;
