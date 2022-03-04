@@ -1,29 +1,40 @@
 import axios from 'axios';
 import ora from 'ora';
 import chalk from 'chalk';
-import templateGenerator from './templateGenerator.js';
+import HtmlGenerator from './HtmlGenerator.js';
 const spinner = ora({ text: '' });
 
 export default {
-	withID: async function (sheetId, rows = false, css = false) {
+	withID: async function (sheetId, rows = false, css = false, config = {}) {
 		try {
 			spinner.start(chalk.dim(`Fetching data for SheetId: ${sheetId}\n`));
 			const url = `https://sheets.alvinashiatey.com/sheetapi/${sheetId}`;
 			const response = await axios.get(url);
 			const { data } = response;
-			await templateGenerator(data.data, css, rows, data.sheetName).then(
-				() => {
-					spinner.succeed(
-						chalk.green(`Files Generated from SheetId: ${sheetId}`)
-					);
-				}
+			const htmlGenerator = new HtmlGenerator(
+				data.data,
+				config,
+				css,
+				rows,
+				data.sheetName
 			);
+			await htmlGenerator.generate().then(() => {
+				spinner.succeed(
+					chalk.green(`Files Generated from SheetId: ${sheetId}`)
+				);
+			});
 		} catch (error) {
 			console.log(error.message);
 			process.exit(1);
 		}
 	},
-	withName: async function (sheetId, sheetName, rows = false, css = false) {
+	withName: async function (
+		sheetId,
+		sheetName,
+		rows = false,
+		css = false,
+		config = {}
+	) {
 		const fetchData = async (id, name) => {
 			const url = `https://sheets.alvinashiatey.com/sheetapi/${id}/${name}`;
 			const response = axios.get(url);
@@ -37,7 +48,14 @@ export default {
 				);
 				const response = await fetchData(sheetId, sheetName);
 				const { data } = response;
-				await templateGenerator(data.data, css, rows).then(() => {
+				const htmlGenerator = new HtmlGenerator(
+					data.data,
+					config,
+					css,
+					rows,
+					data.sheetName
+				);
+				await htmlGenerator.generate().then(() => {
 					spinner.succeed(
 						chalk.green(
 							`Files Generated from SheetName: ${sheetName}`

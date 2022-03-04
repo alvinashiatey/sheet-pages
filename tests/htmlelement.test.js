@@ -1,10 +1,10 @@
 // const { HTML, HTMLelement } = require('../utils/HTMLelement.js');
-import { HTML, HTMLElement } from '../utils/HTML.js';
+import { HTMLBuilder, HTMLElement } from '../utils/HTMLBuilder.js';
 
-describe('HTML Class', function () {
+describe('HTMLBuilder Class', function () {
 	let el;
 	beforeEach(function () {
-		el = new HTML();
+		el = new HTMLBuilder();
 	});
 
 	// it is instantiated with a body element

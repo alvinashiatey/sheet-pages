@@ -40,12 +40,20 @@ class HTMLElement {
 		return this;
 	}
 
+	set innerHTML(html) {
+		this.content = html;
+	}
+
+	get innerHTML() {
+		return this.content;
+	}
+
 	appendChild(element) {
 		this.children.push(element);
-		this.content += this.children.map(child => child.render()).join('');
 	}
 
 	render() {
+		this.content += this.children.map(child => child.render()).join('');
 		let returnAttrString = Object.keys(this.attr)
 			.map(key => `${key}="${this.attr[key]}"`)
 			.join(' ')
@@ -82,10 +90,9 @@ class HTMLElement {
 	}
 }
 
-class HTML {
+class HTMLBuilder {
 	elements = {};
 	lang = 'en';
-	title = '';
 	constructor(options = {}) {
 		this.elements = {};
 		this.lang = options.lang || 'en';
@@ -109,11 +116,17 @@ class HTML {
 		this.#initialMeta();
 	}
 
+	/**
+	 * @param {String} title - title for the HTML document
+	 */
 	set title(val) {
-		this.title = val;
 		let titleElement = this.createElement('title');
-		titleElement.textContent(val);
+		titleElement.textContent = val;
 		this.head.appendChild(titleElement);
+	}
+
+	get title() {
+		return this.elements['title'].innerHTML;
 	}
 
 	get head() {
@@ -163,4 +176,4 @@ class HTML {
 	}
 }
 
-export { HTMLElement, HTML };
+export { HTMLElement, HTMLBuilder };

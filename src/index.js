@@ -20,8 +20,8 @@ export async function sheet_cli() {
 	const { id, sheetName, rows, css } = handleArgs(flags, config);
 	input.includes(`help`) && cli.showHelp(0);
 	!id && cli.showHelp(0);
-	!sheetName && id && (await sheet.withID(id, rows, css));
-	sheetName && id && (await sheet.withName(id, sheetName, rows, css));
+	!sheetName && id && (await sheet.withID(id, rows, css, config));
+	sheetName && id && (await sheet.withName(id, sheetName, rows, css, config));
 	debug && log(flags);
 }
 
