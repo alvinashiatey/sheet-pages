@@ -1,5 +1,5 @@
 // const { HTML, HTMLelement } = require('../utils/HTMLelement.js');
-import { HTML, HTMLElement } from '../utils/HTMLelement.js';
+import { HTML, HTMLElement } from '../utils/HTML.js';
 
 describe('HTML Class', function () {
 	let el;

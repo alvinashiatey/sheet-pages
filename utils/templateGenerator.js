@@ -4,6 +4,7 @@ import mediaHandler from './mediaHandler.js';
 import templateEngine from './templateEngine.js';
 import chalk from 'chalk';
 import config from '../utils/getConfig.js';
+import HTML from './HTML.js';
 const OUTPUT = 'dist';
 const DIR = `${process.cwd()}/${OUTPUT}/`;
 import style from './styles.js';
@@ -311,6 +312,7 @@ const bodyConstructor = dataObject => {
 };
 
 const buildHtml = (data, css) => {
+	let html = new HTML();
 	let body = '';
 	let head = '';
 	let header = '';
@@ -330,20 +332,6 @@ const buildHtml = (data, css) => {
 	}
 	let cssInclude = css ? `<link rel="stylesheet" href="style.css">` : '';
 	return `<!DOCTYPE html> <html> <head> <meta http-equiv="X-UA-Compatible" content="IE=edge"> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> ${head} ${cssInclude} </head><body><div class="container">${header} ${body}</div></body></html>`;
-};
-
-const buildLinkedIndexPage = links => {
-	let indexPage = '';
-	indexPage += `<div class="index__container">`;
-	for (let link of links) {
-		indexPage += `<div class="link"><a href="${link.url}">${link.name}</a></div>`;
-	}
-	indexPage += `</div>`;
-	let html = buildHtml(indexPage);
-	const filePath = path.join(DIR);
-	const fileName = path.join(filePath, `index.html`);
-	dirHandler.createDirectory(fileName, html);
-	return indexPage;
 };
 
 async function generateCSS(css) {
@@ -417,7 +405,7 @@ async function generateMultipleHtml(data, css, directory, sheetName) {
 				);
 			});
 		}
-		buildLinkedIndexPage(links);
+		handleCopyFiles();
 	} catch (e) {
 		console.log(e);
 	}
@@ -436,5 +424,91 @@ export default async function (
 		return generateSingleHtml(data, css, directory, sheetName);
 	} else if (data.length > 1 && rows) {
 		return generateMultipleHtml(data, css, directory, sheetName);
+	}
+}
+
+class Generator {
+	constructor(
+		data,
+		css = false,
+		rows = false,
+		sheetName = undefined,
+		directory = DIR
+	) {
+		this.data = data;
+		this.css = css;
+		this.rows = rows;
+		this.sheetName = sheetName;
+		this.directory = directory;
+	}
+
+	async generateSingleHtml() {
+		try {
+			const filePath = path.join(this.directory);
+			await dirHandler.createDirectory(filePath);
+			let templatePath = path.join(DIR, `../${this.sheetName}.html`);
+			let useEngine = dirHandler.checkIfExists(templatePath);
+			const html = useEngine
+				? await useTemplateEngine(
+						templatePath,
+						this.sheetName,
+						this.data
+				  )
+				: buildHtml(this.data, this.css);
+			const fileName = path.join(filePath, `index.html`);
+			await dirHandler.createFile(fileName, html).then(() => {
+				console.log('HTML file generated!');
+			});
+			await generateCSS(this.css);
+			this.copyFiles();
+		} catch (e) {
+			console.log(e);
+		}
+	}
+
+	async generateMultipleHtml() {
+		try {
+			let links = [];
+			let templatePath = path.join(DIR, `../${this.sheetName}.html`);
+			let useEngine = dirHandler.checkIfExists(templatePath);
+			for (let [index, doc] of this.data.entries()) {
+				let p = doc[Object.keys(doc)[0]].split(' ').join('-');
+				let filePath = path.join(this.directory, `${p}/`);
+				await dirHandler.createDirectory(filePath);
+				const html = useEngine
+					? await useTemplateEngine(templatePath, this.sheetName, doc)
+					: buildHtml(doc, this.css);
+				links.push({ url: `/${p}/`, name: p });
+				const fileName = path.join(filePath, `index.html`);
+				await dirHandler.createFile(fileName, html).then(() => {
+					console.log(
+						'HTML file generated. Path:' + chalk.yellow(fileName)
+					);
+				});
+			}
+			this.copyFiles();
+		} catch (e) {
+			console.log(e);
+		}
+	}
+
+	copyFiles() {
+		let { copyFiles, outputPath } = config;
+		if (copyFiles) {
+			copyFiles.forEach(file => {
+				let filePath = path.join(outputPath, file);
+				dirHandler.copyFile(filePath, file);
+			});
+		}
+	}
+
+	async generate() {
+		if (this.data.length <= 1 && this.data.length !== 0 && !this.rows) {
+			return await this.generateSingleHtml();
+		} else if (this.data.length > 1 && !this.rows) {
+			return await this.generateSingleHtml();
+		} else if (this.data.length > 1 && this.rows) {
+			return await this.generateMultipleHtml();
+		}
 	}
 }
