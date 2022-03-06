@@ -7,8 +7,6 @@ import { HTMLBuilder } from './HTMLBuilder.js';
 import style from './styles.js';
 templateEngine.addShortcode('image', mediaHandler.imageShortCode);
 
-
-
 // const elementConstructor = (arg, keys = null) => {
 // 	let isLink = txt => txt.toLowerCase().includes('http');
 // 	let elements = [];
@@ -68,26 +66,6 @@ templateEngine.addShortcode('image', mediaHandler.imageShortCode);
 // 	return null;
 // };
 
-// const imageConstructor = (arg, cls = null) => {
-// 	let clsString = cls !== null ? ` class="${cls}"` : '';
-// 	let tag = '';
-// 	let p = `${OUTPUT}/images/`;
-// 	if (Array.isArray(arg)) {
-// 		return arg.map(item => {
-// 			if (item === '') return null;
-// 			item.toLowerCase().includes('http') &&
-// 				mediaHandler.download(item, p);
-// 			tag = `<img  ${clsString} src="${mediaHandler.filePathRelative}" alt="">`;
-// 			return divConstructor(tag, 'row__image');
-// 		});
-// 	} else if (arg !== undefined) {
-// 		if (arg === '') return null;
-// 		arg.toLowerCase().includes('http') && mediaHandler.download(arg, p);
-// 		tag = `<img  ${clsString} src="${mediaHandler.filePathRelative}" alt="">`;
-// 		return divConstructor(tag, 'row__image');
-// 	}
-// 	return null;
-// };
 
 
 // const getClassName = arg => {
@@ -254,21 +232,17 @@ templateEngine.addShortcode('image', mediaHandler.imageShortCode);
 // }
 
 class HtmlGenerator {
+	outputPath = 'dist';
 	constructor(
-		data,
-		config = {},
-		css = false,
-		rows = false,
-		sheetName = undefined,
-		outputPath = 'dist',
-		directory = `${process.cwd()}/${outputPath}/`
+		options
 	) {
-		this.data = data;
-		this.css = css;
-		this.rows = rows;
-		this.sheetName = sheetName;
-		this.directory = directory;
-		this.config = config;
+		this.data = options.data;
+		this.css = options.css || false;
+		this.rows = options.rows || false;
+		this.columns = options.columns || false;
+		this.sheetName = options.sheetName;
+		this.directory = options.directory || `${process.cwd()}/${this.outputPath}/`;
+		this.config = options.config || {};
 		console.log(this.config, this.css);
 	}
 
@@ -279,20 +253,22 @@ class HtmlGenerator {
 		);
 		let useEngine = dirHandler.checkIfExists(templatePath);
 		return useEngine
-			? await this.templateEngine(templatePath, this.sheetName, content)
-			: await this.buildHtml(content);
+			? this.templateEngine(templatePath, this.sheetName, content)
+			: this.buildHtml(content);
 	}
 
 	async buildHtml(content) {
 		try {
 			let val;
 			let html = new HTMLBuilder();
-			html.title = this.sheetName;
-			this.css && (html.style = './style.css') && (await this.#generateCSS());
+			this.css &&
+				(html.style = './style.css') &&
+				(await this.#generateCSS());
 			!Array.isArray(content)
 				? (val = content)
 				: (val = this.#collapsedArray(content));
 			this.#handleHead(html, val);
+			this.#setTitle(html, val);
 			this.#handleHeader(html, val);
 			this.#handleBody(html, val);
 			return html.compile();
@@ -327,13 +303,11 @@ class HtmlGenerator {
 
 	async generateMultipleHtml() {
 		try {
-			let links = [];
 			for (let [index, doc] of this.data.entries()) {
 				let p = doc[Object.keys(doc)[0]].split(' ').join('-');
 				let filePath = path.join(this.directory, `${p}/`);
 				await dirHandler.createDirectory(filePath);
 				const html = await this.engine(doc);
-				links.push({ url: `/${p}/`, name: p });
 				const fileName = path.join(filePath, `index.html`);
 				await dirHandler.createFile(fileName, html).then(() => {
 					console.log(
@@ -349,6 +323,7 @@ class HtmlGenerator {
 
 	copyFiles() {
 		let { copyFiles, outputPath } = this.config;
+
 		if (copyFiles) {
 			copyFiles.forEach(file => {
 				let filePath = path.join(outputPath, file);
@@ -357,32 +332,56 @@ class HtmlGenerator {
 		}
 	}
 
+	#setTitle(html, data) {
+		let keys = Object.keys(data);
+		let hasTitle;
+		keys.map(key => key.toLowerCase()).forEach(k => {
+			if (k.includes('title')) return (hasTitle = true);
+		});
+		if (!hasTitle) {
+			html.title = this.sheetName;
+		}
+	}
+
+
 	#handleHead(html, data) {
 		if (typeof data === 'object' && data !== null) {
 			let headKeys = this.#filterKeys(data).headKeys;
 			if (!headKeys.length) return;
 			for (let key of headKeys) {
 				if (this.#stringIncludes(key, 'title') && data[key] !== '') {
-					html.title = data[key].join(' ').trim();
-				} else if (
-					this.#stringIncludes(key, 'description') &&
-					data[key] !== ''
-				) {
+					if (data[key]) {
+						html.title = Array.isArray(data[key])
+							? data[key].join(' ').trim()
+							: data[key];
+					} else {
+						html.title = this.sheetName;
+					}
+				} else {
+					let keyName = key.toLowerCase().replace('meta-', '');
 					let m = html.createElement('meta');
-					m.setAttribute('name', 'description');
-					m.setAttribute('content', data[key].join(' ').trim());
-					html.head.appendChild(m);
-				} else if (
-					this.#stringIncludes(key, 'keywords') &&
-					data[key] !== ''
-				) {
-					let m = html.createElement('meta');
-					m.setAttribute('name', 'keywords');
-					m.setAttribute('content', data[key].join(' ').trim());
+					m.setAttribute('name', keyName);
+					let d = Array.isArray(data[key])
+						? data[key].join(' ').trim()
+						: data[key];
+					m.setAttribute('content', d);
 					html.head.appendChild(m);
 				}
 			}
 		}
+	}
+
+	#handleTitle(html, data) {
+		if (!data) return;
+		let homeLink = html.createElement('a');
+		homeLink.setAttribute('href', '/');
+		let h1 = html.createElement('h1');
+		let d = Array.isArray(data)
+			? data.join(' ').trim()
+			: data;
+		h1.innerHTML = d;
+		homeLink.appendChild(h1);
+		return homeLink;
 	}
 
 	#handleHeader(html, data) {
@@ -392,15 +391,14 @@ class HtmlGenerator {
 			let headerELement = html.createElement('header');
 			for (let key of headerKeys) {
 				if (this.#stringIncludes(key, 'title') && data[key] !== '') {
-					let homeLink = html.createElement('a');
-					homeLink.setAttribute('href', '/');
-					let h1 = html.createElement('h1');
-					h1.innerHTML = data[key].join(' ').trim();
-					homeLink.appendChild(h1);
+					let homeLink = this.#handleTitle(html, data[key]);
 					headerELement.appendChild(homeLink);
 				} else {
 					let h = html.createElement('h1');
-					h.innerHTML = data[key].join(' ').trim();
+					let d = Array.isArray(data[key])
+						? data[key].join(' ').trim()
+						: data[key];
+					h.innerHTML = d;
 					headerELement.appendChild(h);
 				}
 			}
@@ -417,10 +415,11 @@ class HtmlGenerator {
 			let listElement = html.createElement('ul');
 			for (let key of bodyKeys) {
 				let el = this.#elementGenerator(html, data[key], key);
-				if (Array.isArray(el)) el = el.join(' ')
+				if (Array.isArray(el)) el = el.join(' ');
 				el && (bodyElement.innerHTML += el);
 			}
-			listKeys.length && this.#handleListItems(html, data, listKeys, listElement);
+			listKeys.length &&
+				this.#handleListItems(html, data, listKeys, listElement);
 			listKeys.length && bodyElement.appendChild(listElement);
 			html.body.appendChild(bodyElement);
 		}
@@ -428,8 +427,8 @@ class HtmlGenerator {
 
 	#handleListItems(html, data, listKeys, listElement) {
 		let listObject = listKeys.reduce((obj, list) => {
-			return obj[list] = data[list], obj;
-		}, {})
+			return (obj[list] = data[list]), obj;
+		}, {});
 		let listZippedObjects = this.#zipObject(listObject);
 		for (let list of listZippedObjects) {
 			let listItem = this.#elementGenerator(html, list, listKeys);
@@ -440,17 +439,14 @@ class HtmlGenerator {
 	#elementGenerator(html, data, keys) {
 		let elements = [];
 		if (Array.isArray(data) && keys !== null) {
-			console.log(keys, data);
 			if (!data.length) return null;
 			for (let item of data) {
 				elements.push(this.#elementCheck(keys, item, html));
 			}
 			return elements;
-
 		} else if (typeof data === 'string' && keys !== null) {
 			return this.#elementCheck(keys, data, html);
-		}
-		else if (typeof data === 'object' && data !== null && keys !== null) {
+		} else if (typeof data === 'object' && data !== null && keys !== null) {
 			if (!keys.length) return null;
 			for (let key of keys) {
 				elements.push(this.#elementCheck(key, data[key], html));
@@ -460,11 +456,12 @@ class HtmlGenerator {
 	}
 
 	#isLink(text) {
-		return /^http/.test(text)
+		return /^http/.test(text);
 	}
 
 	#elementCheck(key, data, html) {
 		let val = '';
+		let p = `${this.outputPath}/images/`;
 		if (!data) return;
 		if (key.toLowerCase().includes('ignore')) {
 			return;
@@ -475,8 +472,9 @@ class HtmlGenerator {
 			val = a.render();
 		} else if (key.toLowerCase().includes('image')) {
 			let img = html.createElement('img');
-			img.setAttribute('src', data);
-			img.setAttribute('alt', 'image');
+			mediaHandler.download(data, p);
+			img.setAttribute('src', mediaHandler.filePathRelative);
+			img.setAttribute('alt', '');
 			val = img.render();
 		} else {
 			if (this.#isLink(data)) {
@@ -536,10 +534,10 @@ class HtmlGenerator {
 			}
 		}
 		return zipped;
-	};
+	}
 
 	#zipObject(object) {
-		let zipped = []
+		let zipped = [];
 		// take {a: [1,2,3], b: [4,5,6]} and return [{a:1,b:4}, {a:2,b:5}, {a:3,b:6}]
 		for (let i = 0; i < object[Object.keys(object)[0]].length; i++) {
 			let obj = {};
@@ -583,14 +581,14 @@ class HtmlGenerator {
 				bodyKeys
 			};
 		}
-	};
+	}
 
 	#flatten(array) {
 		return array.reduce(
 			(a, b) => a.concat(Array.isArray(b) ? this.#flatten(b) : b),
 			[]
 		);
-	};
+	}
 
 	#flattenObject = obj => {
 		let result = {};
@@ -605,7 +603,7 @@ class HtmlGenerator {
 	};
 
 	async generate() {
-		if (!this.rows) {
+		if (!this.rows || !this.columns) {
 			return await this.generateSingleHtml();
 		} else {
 			return await this.generateMultipleHtml();

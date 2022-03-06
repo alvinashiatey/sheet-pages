@@ -5,27 +5,38 @@ import HtmlGenerator from './HtmlGenerator.js';
 const spinner = ora({ text: '' });
 import Cache from './cache.js';
 
-const getCache = (name) => {
+const getCache = name => {
 	return new Cache(name);
-}
+};
 
 export default {
-	withID: async function (sheetId, rows = false, css = false, config = {}) {
+	withID: async function (opt) {
 		try {
-			spinner.start(chalk.dim(`Fetching data for SheetId: ${sheetId}\n`));
-			const url = `https://sheets.alvinashiatey.com/sheetapi/${sheetId}`;
-			const response = await axios.get(url);
-			const { data } = response;
-			const htmlGenerator = new HtmlGenerator(
-				data.data,
-				config,
-				css,
-				rows,
-				data.sheetName
-			);
+			let data = {};
+			if (!getCache(opt.sheetId).isEmpty) {
+				console.log(chalk.yellow('Using cached data'));
+				data = getCache(opt.sheetId).get('data');
+			} else {
+				console.log(chalk.yellow('Fetching data from Google Sheets'));
+				spinner.start(
+					chalk.dim(`Fetching data for SheetId: ${opt.sheetId}\n`)
+				);
+				const url = `https://sheets.alvinashiatey.com/sheetapi/${opt.sheetId}`;
+				const response = await axios.get(url);
+				({ data } = response);
+				getCache(opt.sheetId).set('data', data);
+			}
+			const htmlGenerator = new HtmlGenerator({
+				data: data.data,
+				config: opt.config,
+				css: opt.css || false,
+				rows: opt.rows || false,
+				columns: opt.columns || false,
+				sheetName: data.sheetName
+			});
 			await htmlGenerator.generate().then(() => {
 				spinner.succeed(
-					chalk.green(`Files Generated from SheetId: ${sheetId}`)
+					chalk.green(`Files Generated from SheetId: ${opt.sheetId}`)
 				);
 			});
 		} catch (error) {
@@ -33,52 +44,36 @@ export default {
 			process.exit(1);
 		}
 	},
-	withName: async function (
-		sheetId,
-		sheetName,
-		rows = false,
-		css = false,
-		config = {}
-	) {
+	withName: async function (opt) {
 		const fetchData = async (id, name) => {
 			const url = `https://sheets.alvinashiatey.com/sheetapi/${id}/${name}`;
-			const response = axios.get(url);
-			return response;
+			return axios.get(url);
 		};
 		try {
-			const nameArray = sheetName.split(',');
-			if (nameArray.length === 1) {
-				spinner.start(
-					chalk.dim(`Fetching data for SheetName: ${nameArray[0]}`)
-				);
-				const response = await fetchData(sheetId, sheetName);
-				const { data } = response;
-				const htmlGenerator = new HtmlGenerator(
-					data.data,
-					config,
-					css,
-					rows,
-					data.sheetName
-				);
-				await htmlGenerator.generate().then(() => {
-					spinner.succeed(
-						chalk.green(
-							`Files Generated from SheetName: ${sheetName}`
-						)
-					);
-				});
+			let data = {};
+			if (!getCache(opt.sheetId).isEmpty) {
+				data = getCache(opt.sheetId).get('data');
 			} else {
-				spinner.start(`Fetching data for sheet names`);
-				const promises = nameArray.map(name => {
-					return fetchData(sheetId, name);
-				});
-				const responses = await Promise.all(promises);
-				const data = responses.map(response => {
-					return response.data;
-				});
-				spinner.succeed(`Fetched data for sheet names`);
-				return console.log(data);
+				spinner.start(
+					chalk.dim(`Fetching data for SheetId: ${opt.sheetId}\n`)
+				);
+				const response = await fetchData(opt.sheetId, opt.sheetName);
+				({ data } = response);
+				getCache(opt.sheetId).set('data', data);
 			}
+			const htmlGenerator = new HtmlGenerator({
+				data: data.data,
+				config: opt.config,
+				css: opt.css || false,
+				rows: opt.rows || false,
+				columns: opt.columns || false,
+				sheetName: data.sheetName
+			});
+			await htmlGenerator.generate().then(() => {
+				spinner.succeed(
+					chalk.green(`Files Generated from SheetName: ${opt.sheetName}`)
+				);
+			});
 		} catch (error) {
 			spinner.fail(
 				'Failed to fetch data, error: ' + chalk.yellow(error.message)

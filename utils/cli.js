@@ -32,13 +32,19 @@ const flags = {
 	sheetName: {
 		type: `string`,
 		alias: `n`,
-		desc: `The ID for the google sheet`
+		desc: `Specify a sheetname to generate pages from.`
 	},
 	rows: {
 		type: `boolean`,
 		default: false,
 		alias: `r`,
-		desc: `The ID for the google sheet`
+		desc: `Generate pages from rows of the google sheet`
+	},
+	colums: {
+		type: `boolean`,
+		default: false,
+		alias: `cl`,
+		desc: `Generate pages from columns of the google sheet`
 	},
 	css: {
 		type: `boolean`,

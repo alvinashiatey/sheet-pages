@@ -17,26 +17,28 @@ const { clear, debug } = flags;
 
 export async function sheet_cli() {
 	init({ clear });
-	const { id, sheetName, rows, css } = handleArgs(flags, config);
+	const { sheetId, sheetName, rows, css } = handleArgs(flags, config);
 	input.includes(`help`) && cli.showHelp(0);
-	!id && cli.showHelp(0);
-	!sheetName && id && (await sheet.withID(id, rows, css, config));
-	sheetName && id && (await sheet.withName(id, sheetName, rows, css, config));
+	!sheetId && cli.showHelp(0);
+	!sheetName && sheetId && (await sheet.withID({ sheetId, rows, css, config }));
+	sheetName && sheetId && (await sheet.withName({ sheetId, sheetName, rows, css, config }));
 	debug && log(flags);
 }
 
 const handleArgs = (flag, conf) => {
 	let f = {};
 	if (conf !== false) {
-		f.id = conf.id;
+		f.sheetId = conf.id;
 		f.sheetName = conf.SheetName;
 		f.rows = conf.rows;
 		f.css = conf.css;
+		f.columns = conf.columns;
 	} else {
-		f.id = flag.sheetId;
+		f.sheetId = flag.sheetId;
 		f.sheetName = flag.sheetName;
 		f.rows = flag.rows;
 		f.css = flag.css;
+		f.columns = flag.columns;
 	}
 	return f;
 };
