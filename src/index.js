@@ -17,11 +17,25 @@ const { clear, debug } = flags;
 
 export async function sheet_cli() {
 	init({ clear });
-	const { sheetId, sheetName, rows, css } = handleArgs(flags, config);
+	const { sheetId, sheetName, rows, columns, css } = handleArgs(
+		flags,
+		config
+	);
 	input.includes(`help`) && cli.showHelp(0);
 	!sheetId && cli.showHelp(0);
-	!sheetName && sheetId && (await sheet.withID({ sheetId, rows, css, config }));
-	sheetName && sheetId && (await sheet.withName({ sheetId, sheetName, rows, css, config }));
+	!sheetName &&
+		sheetId &&
+		(await sheet.withID({ sheetId, rows, columns, css, config }));
+	sheetName &&
+		sheetId &&
+		(await sheet.withName({
+			sheetId,
+			sheetName,
+			columns,
+			rows,
+			css,
+			config
+		}));
 	debug && log(flags);
 }
 

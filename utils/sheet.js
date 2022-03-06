@@ -71,7 +71,9 @@ export default {
 			});
 			await htmlGenerator.generate().then(() => {
 				spinner.succeed(
-					chalk.green(`Files Generated from SheetName: ${opt.sheetName}`)
+					chalk.green(
+						`Files Generated from SheetName: ${opt.sheetName}`
+					)
 				);
 			});
 		} catch (error) {

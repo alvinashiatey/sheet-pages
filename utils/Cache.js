@@ -52,7 +52,7 @@ class Cache {
 	}
 
 	get isEmpty() {
-		return Object.keys(this.cache).length === 0;
+		return Object.keys(this.cache).length <= 1;
 	}
 }
 

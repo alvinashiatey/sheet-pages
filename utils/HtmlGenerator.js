@@ -6,244 +6,18 @@ import chalk from 'chalk';
 import { HTMLBuilder } from './HTMLBuilder.js';
 import style from './styles.js';
 templateEngine.addShortcode('image', mediaHandler.imageShortCode);
-
-// const elementConstructor = (arg, keys = null) => {
-// 	let isLink = txt => txt.toLowerCase().includes('http');
-// 	let elements = [];
-// 	const elementCheck = key => {
-// 		let val = '';
-// 		let cls = getClassName(key);
-// 		if (key.toLowerCase().includes('ignore')) {
-// 			val = '';
-// 		} else if (key.toLowerCase().includes('link')) {
-// 			val = linkConstructor(arg[key]);
-// 		} else if (key.toLowerCase().includes('image')) {
-// 			val = imageConstructor(arg[key], cls);
-// 		} else {
-// 			if (isLink(key)) {
-// 				val = linkConstructor(arg[key], cls);
-// 			} else {
-// 				val = paragraphConstructor(arg[key], cls);
-// 			}
-// 		}
-// 		return val;
-// 	};
-// 	if (typeof arg === 'object' && arg !== null && keys !== null) {
-// 		if (!keys.length) return null;
-// 		for (let key of keys) {
-// 			elements.push(elementCheck(key));
-// 		}
-// 		return elements;
-// 	} else if (Array.isArray(arg)) {
-// 		return arg.map(item => divConstructor(item));
-// 	} else if (arg !== undefined) {
-// 		return paragraphConstructor(arg);
-// 	}
-// 	return null;
-// };
-
-// const ulConstructor = arg => {
-// 	if (typeof arg === 'object' && arg !== null) {
-// 		let listKeys = dataFilter(arg).listKeys;
-// 		if (listKeys.length > 0) {
-// 			let returnArray = elementConstructor(arg, listKeys);
-// 			let listWorkingArray = Array.isArray(returnArray[0])
-// 				? zip(...returnArray)
-// 				: returnArray;
-// 			return `<ul>${listWorkingArray
-// 				.map(list => `<li>${divConstructor(list, 'row')}</li>`)
-// 				.join('')}</ul>`;
-// 		}
-// 	} else if (Array.isArray(arg)) {
-// 		return `<ul>${arg
-// 			.map(item => {
-// 				return `<li>${divConstructor(item, 'row')}</li>`;
-// 			})
-// 			.join('')}</ul>`;
-// 	} else if (arg !== undefined) {
-// 		return `<ul><li class="row">${arg}</li></ul>`;
-// 	}
-// 	return null;
-// };
-
-
-
-// const getClassName = arg => {
-// 	let className = arg.match(/\[class="?(.*?)"?\]/);
-// 	if (className !== null) {
-// 		return className[1];
-// 	}
-// 	return null;
-// };
-
-// const bodyConstructor = dataObject => {
-// 	if (typeof dataObject === 'object' && dataObject !== null) {
-// 		let body = '';
-// 		let keys = Object.keys(dataObject);
-// 		let filterKeys = keys.filter(
-// 			key =>
-// 				key.toLowerCase().includes('ul-') ||
-// 				key.toLowerCase().includes('ol-') ||
-// 				key.toLowerCase().includes('head-') ||
-// 				key.toLowerCase().includes('header-') ||
-// 				key.toLowerCase().includes('footer-') ||
-// 				key.toLowerCase().includes('meta-')
-// 		);
-
-// 		let newKeys = keys.filter(
-// 			key =>
-// 				!filterKeys
-// 					.map(name => name.toLowerCase())
-// 					.includes(key.toLowerCase())
-// 		);
-
-// 		let otherElements = elementConstructor(dataObject, newKeys);
-// 		let otherElementsWorkingArray = Array.isArray(otherElements[0])
-// 			? zip(...otherElements)
-// 			: otherElements;
-// 		let block = '';
-// 		otherElementsWorkingArray.forEach(element => {
-// 			if (element !== null) {
-// 				let div = '';
-// 				div += divConstructor(element, 'row__el');
-// 				block += divConstructor(div, 'el');
-// 			}
-// 		});
-// 		body += `<div class="block__container"><div class="block">${block}</div></div>`;
-// 		body += ulConstructor(dataObject) || '';
-// 		return body;
-// 	}
-// };
-
-// const buildHtml = (data, css) => {
-// 	let html = new HTML();
-// 	let body = '';
-// 	let head = '';
-// 	let header = '';
-// 	if (!Array.isArray(data)) {
-// 		if (typeof data === 'object' && data !== null) {
-// 			head = headConstructor(data).head || '';
-// 			header = headerConstructor(data) || '';
-// 			body = bodyConstructor(data) || '';
-// 		} else {
-// 			body = data;
-// 		}
-// 	} else {
-// 		let collapsedArray = collapseArray(data);
-// 		head = headConstructor(collapsedArray).head || '';
-// 		header = headerConstructor(collapsedArray) || '';
-// 		body = bodyConstructor(collapsedArray) || '';
-// 	}
-// 	let cssInclude = css ? `<link rel="stylesheet" href="style.css">` : '';
-// 	return `<!DOCTYPE html> <html> <head> <meta http-equiv="X-UA-Compatible" content="IE=edge"> <meta charset="utf-8"> <meta name="viewport" content="width=device-width, initial-scale=1"> ${head} ${cssInclude} </head><body><div class="container">${header} ${body}</div></body></html>`;
-// };
-
-// async function generateCSS(css) {
-// 	try {
-// 		if (!css) return;
-// 		const styles = style.css;
-// 		const filePath = path.join(DIR);
-// 		const fileName = path.join(filePath, `style.css`);
-// 		await dirHandler.createFile(fileName, styles);
-// 	} catch (err) {
-// 		console.log(err);
-// 	}
-// }
-
-// function handleCopyFiles() {
-// 	let { copyFiles, outputPath } = config;
-// 	if (copyFiles) {
-// 		console.log('Copying files...');
-// 		outputPath = outputPath || DIR;
-// 		copyFiles.forEach(file => {
-// 			dirHandler.copyFile(file, outputPath);
-// 		});
-// 	}
-// }
-
-// async function useTemplateEngine(templatePath, sheetName, data) {
-// 	try {
-// 		return templateEngine.render(templatePath, sheetName, data);
-// 	} catch (e) {
-// 		console.log(e);
-// 	}
-// }
-
-// async function generateSingleHtml(data, css, directory, sheetName) {
-// 	try {
-// 		const filePath = path.join(directory);
-// 		await dirHandler.createDirectory(filePath);
-// 		let templatePath = path.join(DIR, `../${sheetName}.html`);
-// 		let useEngine = dirHandler.checkIfExists(templatePath);
-// 		const html = useEngine
-// 			? await useTemplateEngine(templatePath, sheetName, data)
-// 			: buildHtml(data, css);
-// 		const fileName = path.join(filePath, `index.html`);
-// 		await dirHandler.createFile(fileName, html).then(() => {
-// 			console.log('HTML file generated!');
-// 		});
-// 		await generateCSS(css);
-// 		handleCopyFiles();
-// 	} catch (e) {
-// 		console.log(e);
-// 	}
-// }
-
-// async function generateMultipleHtml(data, css, directory, sheetName) {
-// 	try {
-// 		let links = [];
-// 		let templatePath = path.join(DIR, `../${sheetName}.html`);
-// 		let useEngine = dirHandler.checkIfExists(templatePath);
-// 		for (let [index, doc] of data.entries()) {
-// 			let p = doc[Object.keys(doc)[0]].split(' ').join('-');
-// 			let filePath = path.join(directory, `${p}/`);
-// 			await dirHandler.createDirectory(filePath);
-// 			const html = useEngine
-// 				? await useTemplateEngine(templatePath, sheetName, doc)
-// 				: buildHtml(doc, css);
-// 			links.push({ url: `/${p}/`, name: p });
-// 			const fileName = path.join(filePath, `index.html`);
-// 			await dirHandler.createFile(fileName, html).then(() => {
-// 				console.log(
-// 					'HTML file generated. Path:' + chalk.yellow(fileName)
-// 				);
-// 			});
-// 		}
-// 		handleCopyFiles();
-// 	} catch (e) {
-// 		console.log(e);
-// 	}
-// }
-
-// export default async function (
-// 	data,
-// 	css = false,
-// 	rows = false,
-// 	sheetName = undefined,
-// 	directory = DIR
-// ) {
-// 	if (data.length === 1 && !rows) {
-// 		return generateSingleHtml(data[0], css, directory, sheetName);
-// 	} else if (data.length > 1 && !rows) {
-// 		return generateSingleHtml(data, css, directory, sheetName);
-// 	} else if (data.length > 1 && rows) {
-// 		return generateMultipleHtml(data, css, directory, sheetName);
-// 	}
-// }
-
 class HtmlGenerator {
 	outputPath = 'dist';
-	constructor(
-		options
-	) {
+	constructor(options) {
 		this.data = options.data;
 		this.css = options.css || false;
 		this.rows = options.rows || false;
 		this.columns = options.columns || false;
 		this.sheetName = options.sheetName;
-		this.directory = options.directory || `${process.cwd()}/${this.outputPath}/`;
+		this.directory =
+			options.directory || `${process.cwd()}/${this.outputPath}/`;
 		this.config = options.config || {};
-		console.log(this.config, this.css);
+		console.log(this.config, this.columns);
 	}
 
 	async engine(content) {
@@ -301,7 +75,7 @@ class HtmlGenerator {
 		}
 	}
 
-	async generateMultipleHtml() {
+	async generateRows() {
 		try {
 			for (let [index, doc] of this.data.entries()) {
 				let p = doc[Object.keys(doc)[0]].split(' ').join('-');
@@ -315,6 +89,33 @@ class HtmlGenerator {
 					);
 				});
 			}
+		} catch (e) {
+			console.log(e);
+		}
+	}
+
+	async generateColumns() {
+		try {
+			let columnedArray = this.#collapsedArray(this.data);
+			for (let column in columnedArray) {
+				let filePath = path.join(this.directory, `${column}/`);
+				await dirHandler.createDirectory(filePath);
+				const html = await this.engine(columnedArray[column]);
+				const fileName = path.join(filePath, `index.html`);
+				await dirHandler.createFile(fileName, html).then(() => {
+					console.log(
+						'HTML file generated. Path:' + chalk.yellow(fileName)
+					);
+				});
+			}
+		} catch (e) {
+			console.log(e);
+		}
+	}
+
+	async generateMultipleHtml() {
+		try {
+			this.rows ? this.generateRow() : this.generateColumns();
 			this.copyFiles();
 		} catch (e) {
 			console.log(e);
@@ -325,10 +126,12 @@ class HtmlGenerator {
 		let { copyFiles, outputPath } = this.config;
 
 		if (copyFiles) {
+			let d;
 			copyFiles.forEach(file => {
-				let filePath = path.join(outputPath, file);
-				dirHandler.copyFile(filePath, file);
+				d = outputPath || this.directory;
+				dirHandler.copyFile(file, d);
 			});
+			console.log(chalk.yellow(`copied files to ${d}`));
 		}
 	}
 
@@ -342,7 +145,6 @@ class HtmlGenerator {
 			html.title = this.sheetName;
 		}
 	}
-
 
 	#handleHead(html, data) {
 		if (typeof data === 'object' && data !== null) {
@@ -376,9 +178,7 @@ class HtmlGenerator {
 		let homeLink = html.createElement('a');
 		homeLink.setAttribute('href', '/');
 		let h1 = html.createElement('h1');
-		let d = Array.isArray(data)
-			? data.join(' ').trim()
-			: data;
+		let d = Array.isArray(data) ? data.join(' ').trim() : data;
 		h1.innerHTML = d;
 		homeLink.appendChild(h1);
 		return homeLink;
@@ -509,6 +309,7 @@ class HtmlGenerator {
 
 	#collapsedArray = array => {
 		const result = {};
+		if (typeof array[0] !== 'object') return array;
 		const keys = Object.keys(array[0]);
 		keys.forEach(key => {
 			result[key] = [];
@@ -603,10 +404,10 @@ class HtmlGenerator {
 	};
 
 	async generate() {
-		if (!this.rows || !this.columns) {
-			return await this.generateSingleHtml();
+		if (!this.rows && !this.columns) {
+			await this.generateSingleHtml();
 		} else {
-			return await this.generateMultipleHtml();
+			await this.generateMultipleHtml();
 		}
 	}
 }

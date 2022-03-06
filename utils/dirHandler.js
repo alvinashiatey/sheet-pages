@@ -15,9 +15,13 @@ class DirectoryHandler {
 		}
 	}
 	static async createFile(path, data) {
-		fs.writeFile(path, data, err => {
-			if (err) throw err;
-		});
+		try {
+			fs.writeFile(path, data, err => {
+				if (err) throw err;
+			});
+		} catch (e) {
+			console.log(e);
+		}
 	}
 	static copyFile(path, dest) {
 		try {

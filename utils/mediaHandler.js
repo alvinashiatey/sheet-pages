@@ -89,7 +89,6 @@ class MediaHandler {
 	static getFromCache(url) {
 		return MediaHandler.cache.get(url);
 	}
-
 }
 
 export default MediaHandler;
