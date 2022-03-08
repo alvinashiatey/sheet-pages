@@ -17,7 +17,6 @@ class HtmlGenerator {
 		this.directory =
 			options.directory || `${process.cwd()}/${this.outputPath}/`;
 		this.config = options.config || {};
-		console.log(this.config, this.columns);
 	}
 
 	async engine(content) {
