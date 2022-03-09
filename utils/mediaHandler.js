@@ -4,11 +4,8 @@ import path from 'path';
 import Cache from './Cache.js';
 const OUTPUT = 'dist';
 const DIR = `${process.cwd()}/${OUTPUT}/images`;
-const CACHE = `${process.cwd()}/.cache/`;
 
 class MediaHandler {
-	static filePathRelative = null;
-	static counter = 0;
 	static cacheDate = new Date().getTime();
 	static cache = new Cache('images');
 	static #validateURL(url) {
@@ -21,6 +18,7 @@ class MediaHandler {
 	}
 
 	static async download(url, dest) {
+		if (!url || url === '') return;
 		try {
 			if (!MediaHandler.#validateURL(url)) return false;
 			let val = {};
@@ -28,26 +26,26 @@ class MediaHandler {
 			if (MediaHandler.getFromCache(url)) {
 				return MediaHandler.getFromCache(url);
 			} else {
-				const bName = path.basename(url);
+				const bName = path.basename(url) || '.jpg';
 				const extRegex = bName.match(/\.(jpg|png|jpeg|gif|webp)/);
 				const ext = extRegex ? extRegex[0] : '';
-				const fileName = `img-${MediaHandler.counter++}-aa${ext}`;
+				const fileName = `img-${MediaHandler.generateRandomName(
+					8
+				)}${Math.floor(Math.random() * 100)}${ext}`;
 				const filePath = path.join(dest, fileName);
-
-				MediaHandler.filePathRelative = path.relative(
-					path.join(dest, '..'),
-					filePath
-				);
 				const response = await axios({
 					url,
 					method: 'GET',
 					responseType: 'stream'
 				});
+				if (!response) return false;
 				if (!fs.existsSync(dest)) fs.mkdirSync(dest);
-				val.filePathRelative = MediaHandler.filePathRelative;
+				val.filePathRelative = path.relative(
+					path.join(dest, '..'),
+					filePath
+				);
 				val.fileName = fileName;
 				val.filePath = filePath;
-
 				return new Promise((resolve, reject) => {
 					response.data
 						.pipe(fs.createWriteStream(filePath))
@@ -56,12 +54,22 @@ class MediaHandler {
 				});
 			}
 		} catch (err) {
-			console.error(err);
+			console.error(err.message);
 			return false;
 		}
 	}
 
+	static generateRandomName(length) {
+		const chars =
+			'0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+		let result = '';
+		for (let i = length; i > 0; --i)
+			result += chars[Math.floor(Math.random() * chars.length)];
+		return result;
+	}
+
 	static async imageShortCode(url, cls) {
+		if (!url || url === '') return;
 		try {
 			if (!MediaHandler.#validateURL(url)) return;
 			let val = {};
@@ -72,10 +80,11 @@ class MediaHandler {
 				if (!src) return Error('Invalid URL');
 				val.src = src.filePathRelative;
 				val.alt = src.fileName;
+				val.cls = cls;
+				MediaHandler.addToCache(url, val);
+				console.log(`from cache`);
 			}
-			val.cls = cls;
-			MediaHandler.addToCache(url, val);
-			return `<img class="${val.cls}" src="${val.src}" alt="${val.src}" />`;
+			return `<img class="${val.cls || ''}" src="/${val.src}" alt="" />`;
 		} catch (err) {
 			console.error(err);
 			return Error('Invalid URL');

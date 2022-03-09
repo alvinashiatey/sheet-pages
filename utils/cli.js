@@ -51,6 +51,12 @@ const flags = {
 		default: false,
 		alias: `c`,
 		desc: `Style the document with default CSS`
+	},
+	watch: {
+		type: `boolean`,
+		default: false,
+		alias: `w`,
+		desc: `Watch the google sheet for changes`
 	}
 };
 

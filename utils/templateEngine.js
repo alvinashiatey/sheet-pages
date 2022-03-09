@@ -19,12 +19,13 @@ class Engine {
 		);
 	}
 
-	async render(template, dataName, data) {
+	async render(template, dataName, data, $ = {}) {
 		return new Promise((resolve, reject) => {
 			return this.env.render(
 				path.resolve(Engine.#path, template),
 				{
-					[dataName]: data
+					[dataName]: data,
+					$
 				},
 				function (err, res) {
 					if (err) {
