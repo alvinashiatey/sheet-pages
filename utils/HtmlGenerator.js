@@ -17,13 +17,15 @@ class HtmlGenerator {
 		this.directory =
 			options.directory || `${process.cwd()}/${this.outputPath}/`;
 		this.config = options.config || {};
+		this.permalink = this.config.permalink || null;
+		this.steps = this.config.steps || null;
+		this.templateFile = this.config.template || null;
 	}
 
 	async engine(content) {
-		let templatePath = path.join(
-			this.directory,
-			`../${this.sheetName}.html`
-		);
+		let tempFile = this.templateFile || this.sheetName;
+		tempFile = tempFile.split('.')[0];
+		let templatePath = path.join(this.directory, `../${tempFile}.html`);
 		let useEngine = dirHandler.checkIfExists(templatePath);
 		return useEngine
 			? this.templateEngine(templatePath, this.sheetName, content)
@@ -66,7 +68,7 @@ class HtmlGenerator {
 			const html = await this.engine(content);
 			const fileName = path.join(filePath, `index.html`);
 			await dirHandler.createFile(fileName, html).then(() => {
-				console.log('HTML file generated!');
+				console.log(this.#chalkText('HTML file generated!', 'green'));
 			});
 			this.copyFiles();
 		} catch (e) {
@@ -78,15 +80,13 @@ class HtmlGenerator {
 		try {
 			for (let [index, doc] of this.data.entries()) {
 				let p = doc[Object.keys(doc)[0]].split(' ').join('-');
-				let filePath = path.join(this.directory, `${p}/`);
+				let filePath = !this.permalink
+					? path.join(this.directory, `${p}/`)
+					: path.join(this.directory, `${this.permalink}/`, `${p}/`);
 				await dirHandler.createDirectory(filePath);
 				const html = await this.engine(doc);
 				const fileName = path.join(filePath, `index.html`);
-				await dirHandler.createFile(fileName, html).then(() => {
-					console.log(
-						'HTML file generated. Path:' + chalk.yellow(fileName)
-					);
-				});
+				await dirHandler.createFile(fileName, html);
 			}
 		} catch (e) {
 			console.log(e);
@@ -123,14 +123,17 @@ class HtmlGenerator {
 
 	copyFiles() {
 		let { copyFiles, outputPath } = this.config;
-
-		if (copyFiles) {
-			let d;
-			copyFiles.forEach(file => {
-				d = outputPath || this.directory;
-				dirHandler.copyFile(file, d);
-			});
-			console.log(chalk.yellow(`copied files to ${d}`));
+		try {
+			if (copyFiles) {
+				let d;
+				copyFiles.forEach(file => {
+					d = outputPath || this.directory;
+					dirHandler.copyFile(file, d);
+				});
+				console.log(chalk.yellow(`copied files to ${d}`));
+			}
+		} catch (e) {
+			console.log(chalk.red(e.message));
 		}
 	}
 
@@ -402,11 +405,52 @@ class HtmlGenerator {
 		return result;
 	};
 
+	stepConfig(step) {
+		this.permalink = step.permalink || this.permalink;
+		this.templateFile = step.template || this.templateFile;
+		this.config.copyFiles = step.copyFiles || this.config.copyFiles;
+	}
+
+	#chalkText(text, color = 'green', style = 'italic') {
+		return !style ? chalk[color](text) : chalk[color][style](text);
+	}
+
+	async handleSteps() {
+		let keys = Object.keys(this.steps);
+		if (keys.length > 0) {
+			for (let key of keys) {
+				let [step] = this.steps[key];
+				if (!step.rows && !step.columns) {
+					this.stepConfig(step);
+					await this.generateSingleHtml();
+				} else {
+					this.stepConfig(step);
+					await this.generateMultipleHtml().then(() => {
+						console.log(
+							this.#chalkText(
+								`Generated ${this.data.length} html files in ${this.directory}`,
+								'greenBright'
+							)
+						);
+					});
+				}
+			}
+		}
+	}
+
 	async generate() {
+		if (this.config.steps) return this.handleSteps();
 		if (!this.rows && !this.columns) {
 			await this.generateSingleHtml();
 		} else {
-			await this.generateMultipleHtml();
+			await this.generateMultipleHtml().then(() => {
+				console.log(
+					this.#chalkText(
+						`Generated ${this.data.length} html files in ${this.directory}`,
+						'greenBright'
+					)
+				);
+			});
 		}
 	}
 }
