@@ -114,7 +114,7 @@ class HtmlGenerator {
 
 	async generateMultipleHtml() {
 		try {
-			this.rows ? this.generateRow() : this.generateColumns();
+			this.rows ? this.generateRows() : this.generateColumns();
 			this.copyFiles();
 		} catch (e) {
 			console.log(e);
