@@ -8,6 +8,7 @@ import style from './styles.js';
 templateEngine.addShortcode('image', mediaHandler.imageShortCode);
 class HtmlGenerator {
 	outputPath = 'dist';
+	globalData = {};
 	constructor(options) {
 		this.data = options.data;
 		this.css = options.css || false;
@@ -20,10 +21,19 @@ class HtmlGenerator {
 		this.permalink = this.config.permalink || null;
 		this.steps = this.config.steps || null;
 		this.templateFile = this.config.template || null;
+		this.tags = this.config.tags || null;
+		this.init();
 	}
 
-	async engine(content) {
-		let tempFile = this.templateFile || this.sheetName;
+	init() {
+		this.handleTags();
+		this.globalData['collections'] = {};
+	}
+
+	async engine(content, template = null) {
+		let tempFile = template
+			? template
+			: this.templateFile || this.sheetName;
 		tempFile = tempFile.split('.')[0];
 		let templatePath = path.join(this.directory, `../${tempFile}.html`);
 		let useEngine = dirHandler.checkIfExists(templatePath);
@@ -54,19 +64,27 @@ class HtmlGenerator {
 
 	async templateEngine(templatePath, sheetName, data) {
 		try {
-			return templateEngine.render(templatePath, sheetName, data);
+			return templateEngine.render(
+				templatePath,
+				sheetName,
+				data,
+				this.globalData
+			);
 		} catch (e) {
 			console.log(e);
 		}
 	}
 
-	async generateSingleHtml() {
+	async generateSingleHtml(options = {}) {
 		try {
 			const content = this.data.length === 1 ? this.data[0] : this.data;
 			const filePath = path.join(this.directory);
 			await dirHandler.createDirectory(filePath);
 			const html = await this.engine(content);
-			const fileName = path.join(filePath, `index.html`);
+			const fName = !options.permalink
+				? `index.html`
+				: `${options.permalink}.html`;
+			const fileName = path.join(filePath, fName);
 			await dirHandler.createFile(fileName, html).then(() => {
 				console.log(this.#chalkText('HTML file generated!', 'green'));
 			});
@@ -76,15 +94,26 @@ class HtmlGenerator {
 		}
 	}
 
-	async generateRows() {
+	async generateRows(options = {}) {
 		try {
 			for (let [index, doc] of this.data.entries()) {
 				let p = doc[Object.keys(doc)[0]].split(' ').join('-');
-				let filePath = !this.permalink
-					? path.join(this.directory, `${p}/`)
-					: path.join(this.directory, `${this.permalink}/`, `${p}/`);
+				let filePath =
+					!options.permalink && !this.permalink
+						? path.join(this.directory, `${this.#sanitizeLink(p)}/`)
+						: path.join(
+								this.directory,
+								`${options.permalink || this.permalink}/`,
+								`${this.#sanitizeLink(p)}/`
+						  );
 				await dirHandler.createDirectory(filePath);
-				const html = await this.engine(doc);
+				doc['url'] =
+					!options.permalink && !this.permalink
+						? `${this.#sanitizeLink(p)}`
+						: `${
+								options.permalink || this.permalink
+						  }/${this.#sanitizeLink(p)}`;
+				const html = await this.engine(doc, options.template);
 				const fileName = path.join(filePath, `index.html`);
 				await dirHandler.createFile(fileName, html);
 			}
@@ -93,13 +122,16 @@ class HtmlGenerator {
 		}
 	}
 
-	async generateColumns() {
+	async generateColumns(options = {}) {
 		try {
 			let columnedArray = this.#collapsedArray(this.data);
 			for (let column in columnedArray) {
 				let filePath = path.join(this.directory, `${column}/`);
 				await dirHandler.createDirectory(filePath);
-				const html = await this.engine(columnedArray[column]);
+				const html = await this.engine(
+					columnedArray[column],
+					options.template
+				);
 				const fileName = path.join(filePath, `index.html`);
 				await dirHandler.createFile(fileName, html).then(() => {
 					console.log(
@@ -112,12 +144,54 @@ class HtmlGenerator {
 		}
 	}
 
-	async generateMultipleHtml() {
+	async generateMultipleHtml(options = {}) {
 		try {
-			this.rows ? this.generateRows() : this.generateColumns();
+			this.rows
+				? this.generateRows(options)
+				: this.generateColumns(options);
 			this.copyFiles();
 		} catch (e) {
 			console.log(e);
+		}
+	}
+
+	async handleSteps() {
+		let keys = Object.keys(this.steps);
+		if (keys.length > 0) {
+			for (let key of keys) {
+				let [step] = this.steps[key];
+				if (!step.rows && !step.columns) {
+					this.stepConfig(step);
+					await this.generateSingleHtml(step);
+				} else {
+					this.globalData['collections'][key] = step;
+					await this.generateMultipleHtml(step).then(() => {
+						console.log(
+							this.#chalkText(
+								`Generated ${this.data.length} html files in ${this.directory}`,
+								'greenBright'
+							)
+						);
+					});
+				}
+			}
+		}
+	}
+
+	handleTags() {
+		if (this.tags) {
+			let t = {};
+			for (const tag of this.tags) {
+				t[tag] = [];
+				for (const el of this.data) {
+					for (const key of Object.keys(el)) {
+						if (key.toLowerCase() === tag.toLowerCase()) {
+							t[key].push(el[key]);
+						}
+					}
+				}
+			}
+			this.globalData['tags'] = t;
 		}
 	}
 
@@ -415,27 +489,8 @@ class HtmlGenerator {
 		return !style ? chalk[color](text) : chalk[color][style](text);
 	}
 
-	async handleSteps() {
-		let keys = Object.keys(this.steps);
-		if (keys.length > 0) {
-			for (let key of keys) {
-				let [step] = this.steps[key];
-				if (!step.rows && !step.columns) {
-					this.stepConfig(step);
-					await this.generateSingleHtml();
-				} else {
-					this.stepConfig(step);
-					await this.generateMultipleHtml().then(() => {
-						console.log(
-							this.#chalkText(
-								`Generated ${this.data.length} html files in ${this.directory}`,
-								'greenBright'
-							)
-						);
-					});
-				}
-			}
-		}
+	#sanitizeLink(link) {
+		return link.replace(/\s/g, '-').toLowerCase();
 	}
 
 	async generate() {

@@ -47,12 +47,15 @@ const handleArgs = (flag, conf) => {
 		f.rows = conf.rows;
 		f.css = conf.css;
 		f.columns = conf.columns;
+		f.watch = conf.watch;
+		f.tags = conf.tags;
 	} else {
 		f.sheetId = flag.sheetId;
 		f.sheetName = flag.sheetName;
 		f.rows = flag.rows;
 		f.css = flag.css;
 		f.columns = flag.columns;
+		f.watch = flag.watch;
 	}
 	return f;
 };
