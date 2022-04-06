@@ -22,7 +22,6 @@ class MediaHandler {
 		try {
 			if (!MediaHandler.#validateURL(url)) return false;
 			let val = {};
-			// Check if file exists in cache
 			if (MediaHandler.getFromCache(url)) {
 				return MediaHandler.getFromCache(url);
 			} else {
@@ -82,7 +81,6 @@ class MediaHandler {
 				val.alt = src.fileName;
 				val.cls = cls;
 				MediaHandler.addToCache(url, val);
-				console.log(`from cache`);
 			}
 			return `<img class="${val.cls || ''}" src="/${val.src}" alt="" />`;
 		} catch (err) {
